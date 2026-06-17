@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="A fish hook catching a message, representing phishing">
+  <rect width="640" height="300" fill="#FCEBEB"/>
+  <rect x="206" y="150" width="170" height="110" rx="14" fill="#F7C1C1"/>
+  <path d="M206 164 l85 60 l85 -60" fill="none" stroke="#A32D2D" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M430 70 v92 a40 40 0 0 1 -80 0" fill="none" stroke="#791F1F" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="430" cy="64" r="12" fill="#791F1F"/>
+  <text x="320" y="288" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#501313">Spot the bait before you bite</text>
+</svg>

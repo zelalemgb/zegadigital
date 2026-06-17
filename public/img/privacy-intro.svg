@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="A shield representing personal privacy and control">
+  <rect width="640" height="300" fill="#E1F5EE"/>
+  <circle cx="320" cy="150" r="96" fill="#9FE1CB"/>
+  <path d="M320 84 l54 20 v44 c0 40 -27 70 -54 84 c-27 -14 -54 -44 -54 -84 v-44 z" fill="#0F6E56"/>
+  <circle cx="320" cy="150" r="20" fill="#E1F5EE"/>
+  <rect x="312" y="150" width="16" height="30" rx="4" fill="#E1F5EE"/>
+  <text x="320" y="262" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#04342C">Your privacy, your control</text>
+</svg>

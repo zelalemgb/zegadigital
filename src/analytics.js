@@ -1,0 +1,160 @@
+'use strict';
+
+/**
+ * Program analytics / KPIs, computed from the durable store.
+ *
+ * summary() returns a single object covering the metrics a digital-literacy
+ * programme cares about: reach, engagement funnel, retention proxies,
+ * completion, quiz performance, knowledge-check accuracy (mastery), and the
+ * headline impact number — average learning gain (endline − baseline).
+ *
+ * Reads tables directly via the shared db handle; pure aggregation, no writes.
+ */
+
+const { db } = require('./store/db');
+const { getContent } = require('./content');
+const curriculum = require('./curriculum');
+const { levelInfo, LEVELS } = require('./gamification/xp');
+
+function rows(sql, ...params) {
+  return db.prepare(sql).all(...params);
+}
+
+function summary(opts = {}) {
+  const today = opts.today || new Date().toISOString().slice(0, 10);
+  const content = getContent('en');
+
+  const profiles = rows('SELECT * FROM profiles');
+  const lessonRows = rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id');
+  const completedByUser = new Map(lessonRows.map((r) => [r.user_id, r.c]));
+  const trackTotals = {
+    youth: curriculum.allLessonIds(content, 'youth').length,
+    adult: curriculum.allLessonIds(content, 'adult').length,
+  };
+
+  // ── Reach & engagement funnel ──────────────────────────────────────────
+  const users = profiles.length;
+  const pickedTrack = profiles.filter((p) => p.track).length;
+  const startedLesson = profiles.filter((p) => (completedByUser.get(p.user_id) || 0) >= 1).length;
+  const completedTrack = profiles.filter(
+    (p) => p.track && trackTotals[p.track] && (completedByUser.get(p.user_id) || 0) >= trackTotals[p.track]
+  ).length;
+
+  // ── XP / levels / streaks ───────────────────────────────────────────────
+  const byLevel = LEVELS.map((l) => ({ name: l.name, count: 0 }));
+  let totalXp = 0;
+  const streaks = [];
+  let optedIn = 0;
+  for (const p of profiles) {
+    totalXp += p.xp || 0;
+    byLevel[levelInfo(p.xp || 0).index].count += 1;
+    streaks.push(p.streak || 0);
+    if (p.opt_in_reminders) optedIn += 1;
+  }
+  const streakBuckets = bucketStreaks(streaks);
+
+  // ── Activity / retention proxies (from the event log) ──────────────────
+  const eventDays = rows(
+    "SELECT substr(ts,1,10) d, COUNT(DISTINCT user_id) u, COUNT(*) n FROM events GROUP BY d ORDER BY d DESC LIMIT 14"
+  );
+  const activeToday = (eventDays.find((r) => r.d === today) || {}).u || 0;
+  const distinctActive = rows('SELECT COUNT(DISTINCT user_id) u FROM events')[0].u;
+
+  // ── Quizzes ─────────────────────────────────────────────────────────────
+  const quizEvents = rows("SELECT data FROM events WHERE type = 'quizFinished'").map((r) => safe(r.data));
+  const quizAttempts = quizEvents.length;
+  const quizPasses = quizEvents.filter((q) => q && q.passed).length;
+  const quizAvgPct = avg(quizEvents.map((q) => (q && q.total ? (q.score / q.total) * 100 : 0)));
+
+  // ── Knowledge checks (mastery signal) ───────────────────────────────────
+  const checkAgg = rows('SELECT COUNT(*) n, SUM(correct) c FROM check_results')[0];
+  const checksAnswered = checkAgg.n || 0;
+  const checkAccuracy = checksAnswered ? Math.round((checkAgg.c / checksAnswered) * 100) : 0;
+
+  // ── Learning gain (headline impact) ─────────────────────────────────────
+  const learning = learningGain();
+
+  // ── Badges & reminders ──────────────────────────────────────────────────
+  const badgeRows = rows('SELECT badge_id, COUNT(*) c FROM badges GROUP BY badge_id ORDER BY c DESC');
+  const badgesAwarded = badgeRows.reduce((n, b) => n + b.c, 0);
+  const nudgesSent = rows("SELECT COUNT(*) c FROM events WHERE type = 'nudgeSent'")[0].c;
+
+  return {
+    generatedFor: today,
+    reach: { users, pickedTrack, startedLesson, completedTrack, distinctActive, activeToday },
+    funnel: [
+      { stage: 'Joined', count: users },
+      { stage: 'Picked track', count: pickedTrack },
+      { stage: 'Completed ≥1 lesson', count: startedLesson },
+      { stage: 'Completed track', count: completedTrack },
+    ],
+    xp: { total: totalXp, avg: users ? Math.round(totalXp / users) : 0, byLevel },
+    streaks: { avg: round1(avg(streaks)), max: streaks.length ? Math.max(...streaks) : 0, buckets: streakBuckets },
+    retention: { activityByDay: eventDays.reverse() },
+    quizzes: {
+      attempts: quizAttempts,
+      passes: quizPasses,
+      passRate: quizAttempts ? Math.round((quizPasses / quizAttempts) * 100) : 0,
+      avgScorePct: Math.round(quizAvgPct),
+    },
+    checks: { answered: checksAnswered, accuracy: checkAccuracy },
+    learningGain: learning,
+    badges: { awarded: badgesAwarded, byBadge: badgeRows },
+    reminders: { optedIn, nudgesSent },
+  };
+}
+
+function learningGain() {
+  const all = rows('SELECT user_id, kind, score, total, id FROM assessments ORDER BY id');
+  const byUser = new Map();
+  for (const a of all) {
+    if (!byUser.has(a.user_id)) byUser.set(a.user_id, {});
+    const u = byUser.get(a.user_id);
+    if (a.kind === 'baseline' && u.baseline == null) u.baseline = pct(a); // earliest baseline
+    if (a.kind === 'endline') u.endline = pct(a); // latest endline
+  }
+  let baselineTaken = 0;
+  let endlineTaken = 0;
+  const gains = [];
+  let baselineAvg = [];
+  let endlineAvg = [];
+  for (const u of byUser.values()) {
+    if (u.baseline != null) { baselineTaken += 1; baselineAvg.push(u.baseline); }
+    if (u.endline != null) { endlineTaken += 1; endlineAvg.push(u.endline); }
+    if (u.baseline != null && u.endline != null) gains.push(u.endline - u.baseline);
+  }
+  return {
+    baselineTaken,
+    endlineTaken,
+    bothTaken: gains.length,
+    avgBaselinePct: Math.round(avg(baselineAvg)),
+    avgEndlinePct: Math.round(avg(endlineAvg)),
+    avgGainPoints: gains.length ? round1(avg(gains)) : null,
+  };
+}
+
+function pct(a) {
+  return a.total ? (a.score / a.total) * 100 : 0;
+}
+function bucketStreaks(streaks) {
+  const b = { '0': 0, '1-2': 0, '3-6': 0, '7-13': 0, '14+': 0 };
+  for (const s of streaks) {
+    if (s === 0) b['0'] += 1;
+    else if (s <= 2) b['1-2'] += 1;
+    else if (s <= 6) b['3-6'] += 1;
+    else if (s <= 13) b['7-13'] += 1;
+    else b['14+'] += 1;
+  }
+  return b;
+}
+function avg(arr) {
+  return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+}
+function round1(n) {
+  return Math.round(n * 10) / 10;
+}
+function safe(s) {
+  try { return JSON.parse(s); } catch { return null; }
+}
+
+module.exports = { summary, learningGain };

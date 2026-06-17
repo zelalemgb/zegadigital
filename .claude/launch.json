@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zega-tester",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "tester"],
+      "port": 3100
+    }
+  ]
+}

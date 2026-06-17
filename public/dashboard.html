@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Zega Digital — Program Metrics</title>
+<style>
+  :root { --bg:#0b141a; --card:#111b21; --line:#22323c; --text:#e9edef; --muted:#8696a0; --accent:#00a884; --accent2:#3b82f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1000px; margin:0 auto; padding:24px 18px 60px; }
+  h1 { font-size:22px; font-weight:600; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .card h2 { font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:0 0 12px; }
+  .big { font-size:30px; font-weight:600; }
+  .big small { font-size:14px; color:var(--muted); font-weight:400; }
+  .kpi-row { display:flex; justify-content:space-between; align-items:baseline; margin:6px 0; font-size:14px; }
+  .kpi-row .v { font-weight:600; }
+  .barline { margin:8px 0; font-size:13px; }
+  .barline .lab { display:flex; justify-content:space-between; margin-bottom:3px; color:var(--muted); }
+  .track { background:#1b2a33; border-radius:6px; height:10px; overflow:hidden; }
+  .fill { height:100%; background:var(--accent); }
+  .fill.blue { background:var(--accent2); }
+  .gain { font-size:26px; font-weight:600; color:#5dcaa5; }
+  .muted { color:var(--muted); font-size:13px; }
+  .refresh { float:right; background:transparent; border:1px solid var(--muted); color:var(--muted); border-radius:6px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  .full { grid-column:1/-1; }
+  .spark { display:flex; gap:4px; align-items:flex-end; height:60px; }
+  .spark .b { flex:1; background:var(--accent2); border-radius:3px 3px 0 0; min-height:2px; }
+  .spark .d { font-size:10px; color:var(--muted); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="refresh" onclick="load()">↻ Refresh</button>
+  <h1>📊 Zega Digital — program metrics</h1>
+  <div class="sub" id="sub">loading…</div>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+  const el = (h) => { const d = document.createElement('div'); d.innerHTML = h; return d.firstElementChild; };
+  function card(title, inner, full) { return `<div class="card${full?' full':''}"><h2>${title}</h2>${inner}</div>`; }
+  function bars(items, max, blue) {
+    return items.map(i => {
+      const pct = max ? Math.round((i.count / max) * 100) : 0;
+      return `<div class="barline"><div class="lab"><span>${i.label}</span><span>${i.count}</span></div>
+        <div class="track"><div class="fill${blue?' blue':''}" style="width:${pct}%"></div></div></div>`;
+    }).join('');
+  }
+
+  async function load() {
+    const r = await fetch('/api/metrics'); const a = await r.json();
+    document.getElementById('sub').textContent = 'Generated for ' + a.generatedFor + ' · ' + a.reach.users + ' users';
+    const g = document.getElementById('grid'); g.innerHTML = '';
+    const top = a.funnel[0].count || 1;
+
+    g.appendChild(el(card('Reach',
+      `<div class="big">${a.reach.users}<small> users</small></div>
+       <div class="kpi-row"><span>Active today</span><span class="v">${a.reach.activeToday}</span></div>
+       <div class="kpi-row"><span>Ever active</span><span class="v">${a.reach.distinctActive}</span></div>`)));
+
+    g.appendChild(el(card('Learning gain (impact)',
+      a.learningGain.bothTaken
+        ? `<div class="gain">${a.learningGain.avgBaselinePct}% → ${a.learningGain.avgEndlinePct}%</div>
+           <div class="muted">+${a.learningGain.avgGainPoints} points average · n=${a.learningGain.bothTaken}</div>`
+        : `<div class="muted">Baseline: ${a.learningGain.baselineTaken} · Endline: ${a.learningGain.endlineTaken}<br>Need both for a gain figure.</div>`)));
+
+    g.appendChild(el(card('Knowledge checks (mastery)',
+      `<div class="big">${a.checks.accuracy}%<small> correct</small></div>
+       <div class="muted">${a.checks.answered} checks answered</div>`)));
+
+    g.appendChild(el(card('Quizzes',
+      `<div class="big">${a.quizzes.passRate}%<small> pass rate</small></div>
+       <div class="kpi-row"><span>Attempts</span><span class="v">${a.quizzes.attempts}</span></div>
+       <div class="kpi-row"><span>Avg score</span><span class="v">${a.quizzes.avgScorePct}%</span></div>`)));
+
+    g.appendChild(el(card('Engagement funnel',
+      bars(a.funnel.map(f => ({ label: f.stage, count: f.count })), top), true)));
+
+    g.appendChild(el(card('Learners by level',
+      bars(a.xp.byLevel.map(l => ({ label: l.name, count: l.count })), Math.max(1, ...a.xp.byLevel.map(l => l.count)), true))));
+
+    g.appendChild(el(card('Streaks',
+      `<div class="kpi-row"><span>Average</span><span class="v">${a.streaks.avg} days</span></div>
+       <div class="kpi-row"><span>Longest</span><span class="v">${a.streaks.max} days</span></div>`
+      + bars(Object.entries(a.streaks.buckets).map(([k,v]) => ({label:k+' days', count:v})), Math.max(1, ...Object.values(a.streaks.buckets))))));
+
+    const days = a.retention.activityByDay || [];
+    const dmax = Math.max(1, ...days.map(d => d.u));
+    g.appendChild(el(card('Daily active users (last 14 days)',
+      `<div class="spark">${days.map(d => `<div style="flex:1"><div class="b" style="height:${Math.round((d.u/dmax)*52)}px"></div><div class="d">${d.d.slice(5)}</div></div>`).join('')}</div>`
+      + `<div class="muted" style="margin-top:8px">Reminders opted-in: ${a.reminders.optedIn} · nudges sent: ${a.reminders.nudgesSent} · badges: ${a.badges.awarded}</div>`, true)));
+  }
+  load();
+</script>
+</body>
+</html>

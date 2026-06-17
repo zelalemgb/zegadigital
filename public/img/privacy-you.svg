@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Privacy setting toggles and a profile">
+  <rect width="640" height="300" fill="#E6F1FB"/>
+  <circle cx="200" cy="150" r="86" fill="#B5D4F4"/>
+  <circle cx="200" cy="122" r="30" fill="#185FA5"/>
+  <path d="M150 196 c0 -34 22 -54 50 -54 s50 20 50 54 z" fill="#185FA5"/>
+  <g>
+    <rect x="320" y="104" width="150" height="26" rx="13" fill="#B5D4F4"/>
+    <circle cx="453" cy="117" r="16" fill="#185FA5"/>
+    <rect x="320" y="150" width="150" height="26" rx="13" fill="#B5D4F4"/>
+    <circle cx="337" cy="163" r="16" fill="#0F6E56"/>
+    <rect x="320" y="196" width="150" height="26" rx="13" fill="#B5D4F4"/>
+    <circle cx="453" cy="209" r="16" fill="#185FA5"/>
+  </g>
+  <text x="320" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#042C53">Choose who sees what</text>
+</svg>

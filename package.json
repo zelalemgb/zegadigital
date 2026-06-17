@@ -1,0 +1,29 @@
+{
+  "name": "zega-digital-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Zega Digital ዜጋ ዲጂታል — a digital-literacy WhatsApp bot for Ethiopia (My Digital World content), built on the Meta WhatsApp Cloud API.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "cli": "node scripts/cli.js",
+    "tester": "node scripts/web-tester.js",
+    "scheduler": "node scripts/scheduler.js",
+    "metrics": "node scripts/metrics.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "digital-literacy",
+    "ethiopia",
+    "meta-cloud-api"
+  ],
+  "author": "Zega Digital",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

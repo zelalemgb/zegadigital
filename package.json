@@ -23,7 +23,7 @@
   "author": "Zega Digital",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

@@ -7,13 +7,16 @@
  * falls back to English automatically. Keep every `input` / `next` / `answer`
  * key identical to English — translate only the human-readable text.
  *
- * Coverage (batch 1): onboarding, navigation menus, glossary, about, help,
- * and system strings. Lessons, quizzes and per-lesson checks still fall back to
- * English and are translated in later batches.
+ * Coverage: onboarding, navigation menus, glossary, about, help, system
+ * strings, quizzes, and lesson bodies (all ~35 lessons). Per-lesson checks and
+ * the quiz tier-badge lines still fall back to English.
  */
 
 // Quiz questions extracted from the Afaan Oromo doc (scripts/parse_quiz.py).
 const quiz = require('./quiz.json');
+// Translated lesson bodies (scripts/parse_lessons.py). Overrides `messages` only;
+// all other lesson fields (checks, next, title) fall back to English.
+const lessons = require('./lessons.json');
 
 module.exports = {
   meta: { code: 'om', name: 'Afaan Oromo', complete: false },
@@ -181,6 +184,7 @@ module.exports = {
   },
 
   nodes: {
+    ...lessons.nodes,
     MAIN: {
       title: '🏠 Menuu Ijoo',
       body: '👉 Maaloo filadhaa:',

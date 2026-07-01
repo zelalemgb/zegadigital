@@ -84,6 +84,7 @@
   </div>
   <div class="spacer"></div>
   <button id="refresh">↻ Refresh</button>
+  <button id="signout">↪ Sign out</button>
 </header>
 <main id="app"><div class="empty">Loading analytics…</div></main>
 
@@ -249,6 +250,7 @@ async function load() {
     // Build the URL from origin (never includes userinfo) so the request works
     // even if the page was opened with credentials embedded in the address bar.
     const res = await fetch(location.origin + "/admin/api", { headers: { Accept: "application/json" } });
+    if (res.status === 401) { location.href = "/admin/login"; return; } // session expired
     if (!res.ok) throw new Error("HTTP " + res.status);
     render(await res.json());
   } catch (e) {
@@ -256,6 +258,10 @@ async function load() {
   }
 }
 $("#refresh").addEventListener("click", load);
+
+// Cookie session → logout is a real server round-trip that clears the cookie.
+$("#signout").addEventListener("click", () => { location.href = "/admin/logout"; });
+
 load();
 </script>
 </body>

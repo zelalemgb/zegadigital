@@ -7,7 +7,8 @@
  *   POST /webhook  → inbound messages; we run the runtime and reply
  *   GET  /         → public PWA landing page (QR to start on WhatsApp)
  *   GET  /health   → liveness probe
- *   GET  /admin    → manager analytics dashboard (HTTP Basic, ADMIN_TOKEN)
+ *   GET  /admin    → manager analytics dashboard (cookie session; ADMIN_TOKEN)
+ *   GET  /admin/login, POST /admin/login, GET /admin/logout → session auth
  *   GET  /admin/api→ dashboard data as JSON (same auth)
  *   GET  /img/*    → lesson illustrations (so MEDIA_BASE_URL can point here)
  *
@@ -60,27 +61,69 @@ app.get('/public.json', (_req, res) => {
   });
 });
 
-// ── Manager dashboard (protected) ─────────────────────────────────────────
-// Fails closed: with no ADMIN_TOKEN set the dashboard is disabled, so we never
-// expose learner data by accident. Auth is HTTP Basic — any username, password
-// must equal ADMIN_TOKEN — which the browser handles with a native prompt.
+// ── Manager dashboard (cookie session) ────────────────────────────────────
+// A cookie session (not HTTP Basic) so there's a real login page and a working
+// "Sign out". Fails closed: with no ADMIN_TOKEN the dashboard is disabled, so
+// learner data is never exposed by accident. The cookie holds a token derived
+// from ADMIN_TOKEN via HMAC — proving knowledge of the password without storing
+// it — and is HttpOnly + SameSite=Strict (+ Secure in production).
+const COOKIE = 'zega_admin';
+const COOKIE_PATH = '/admin';
+const SESSION_TOKEN = config.adminToken
+  ? crypto.createHmac('sha256', config.adminToken).update('zega-admin-session').digest('hex')
+  : '';
+const SECURE_COOKIES = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+
+function timingSafeEqual(a, b) {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
+function readCookie(req, name) {
+  const raw = req.headers.cookie || '';
+  for (const part of raw.split(';')) {
+    const i = part.indexOf('=');
+    if (i > -1 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return null;
+}
+
 function requireAdmin(req, res, next) {
   if (!config.adminToken) {
     return res.status(503).send('Dashboard disabled: set ADMIN_TOKEN to enable.');
   }
-  const header = req.get('authorization') || '';
-  const [scheme, encoded] = header.split(' ');
-  if (scheme === 'Basic' && encoded) {
-    const pass = Buffer.from(encoded, 'base64').toString().split(':').slice(1).join(':');
-    const a = Buffer.from(pass);
-    const b = Buffer.from(config.adminToken);
-    if (a.length === b.length && crypto.timingSafeEqual(a, b)) return next();
-  }
-  res.set('WWW-Authenticate', 'Basic realm="Zega Dashboard"').status(401).send('Authentication required.');
+  const tok = readCookie(req, COOKIE);
+  if (tok && timingSafeEqual(tok, SESSION_TOKEN)) return next();
+  // Not signed in: send the API a 401, but take a person to the login page.
+  if (req.path.endsWith('/api')) return res.status(401).json({ error: 'Not authenticated' });
+  return res.redirect('/admin/login');
 }
 
+app.get('/admin/login', (_req, res) => {
+  if (!config.adminToken) return res.status(503).send('Dashboard disabled: set ADMIN_TOKEN to enable.');
+  res.sendFile(path.join(PUBLIC, 'admin-login.html'));
+});
+
+app.post('/admin/login', express.urlencoded({ extended: false }), (req, res) => {
+  if (!config.adminToken) return res.status(503).send('Dashboard disabled: set ADMIN_TOKEN to enable.');
+  const pass = (req.body && req.body.password) || '';
+  if (timingSafeEqual(pass, config.adminToken)) {
+    res.cookie(COOKIE, SESSION_TOKEN, {
+      httpOnly: true, sameSite: 'strict', secure: SECURE_COOKIES,
+      path: COOKIE_PATH, maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    return res.redirect('/admin');
+  }
+  return res.redirect('/admin/login?e=1');
+});
+
+app.get('/admin/logout', (_req, res) => {
+  res.clearCookie(COOKIE, { path: COOKIE_PATH });
+  res.redirect('/admin/login');
+});
+
 app.get('/admin', requireAdmin, (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+  res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
 app.get('/admin/api', requireAdmin, (_req, res) => {

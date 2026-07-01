@@ -34,7 +34,7 @@ module.exports = {
   'youth.foundations': {
     type: 'menu',
     title: '🌐 Digital Foundations',
-    image: '/img/foundations.svg',
+    image: '/img/foundations.png',
     body: 'The basics of staying safe online. Pick a topic:',
     options: [
       { input: '1', label: '1️⃣ 🔐 Introduction to Privacy', next: 'youth.foundations.privacy-intro' },
@@ -51,7 +51,7 @@ module.exports = {
     parentLabel: 'Digital Foundations',
     next: 'youth.foundations.privacy-you',
     messages: [
-      { image: '/img/privacy-intro.svg', text: "💡 *Privacy = control.*\nIt's not about hiding everything — it's about deciding who knows what about you." },
+      { image: '/img/privacy-intro.png', text: "💡 *Privacy = control.*\nIt's not about hiding everything — it's about deciding who knows what about you." },
       { text: "Your birthday isn't a secret — lots of people know it. But it can still feel private.\n\n_Privacy isn't the same as secrecy._" },
       { text: '🏫 It also depends on context.\nYou might share your home address with your school — but not with a stranger online.' },
       { text: 'So before you share, ask yourself:\nis this the *right person, place and reason*?' },
@@ -64,7 +64,7 @@ module.exports = {
     parentLabel: 'Digital Foundations',
     next: 'youth.foundations.passwords',
     messages: [
-      { image: '/img/privacy-you.svg', text: '⚙️ *Every post is a privacy choice.*\nBefore you share, think about your audience.' },
+      { image: '/img/privacy-you.png', text: '⚙️ *Every post is a privacy choice.*\nBefore you share, think about your audience.' },
       { text: 'Privacy settings — *Friends only* or *Public* — control who sees what.\nFind them in Settings → Privacy.' },
       { text: '🤔 Quick one: would you share your home address with a teacher? A new online friend? A company?\n\nThere\'s no single right answer — context decides.' },
       { text: "One catch: settings don't hide everything.\n*Metadata* (when and where you posted) and 🍪 *cookies* still leave a trail." },
@@ -77,7 +77,7 @@ module.exports = {
     parentLabel: 'Digital Foundations',
     next: 'youth.foundations.cyber',
     messages: [
-      { image: '/img/passwords.svg', text: '🔐 *A password is a lock on your digital life.*\nThe stronger it is, the safer you are.' },
+      { image: '/img/passwords.png', text: '🔐 *A password is a lock on your digital life.*\nThe stronger it is, the safer you are.' },
       { text: 'The secret is *length*.\nA passphrase of 4 random words — like river-mango-blue-star — beats a short, complex one.' },
       { text: 'Hackers use programs that guess millions of passwords a second.\nShort ones fall in seconds; long passphrases take *years*.' },
       { text: '🛡️ Add a second lock: *two-factor authentication* (a code sent to your phone).\nEven a stolen password won\'t get them in.' },
@@ -90,7 +90,7 @@ module.exports = {
     parent: 'youth.foundations',
     parentLabel: 'Digital Foundations',
     messages: [
-      { image: '/img/cyber.svg', text: '🎣 *Phishing* is a fake message designed to steal your info.\nLearning the signs protects you better than any app.' },
+      { image: '/img/cyber.png', text: '🎣 *Phishing* is a fake message designed to steal your info.\nLearning the signs protects you better than any app.' },
       { text: '🚩 Red flags:\nurgent threats, bad spelling, strange links, surprise prizes, or anyone asking for your password.' },
       { text: 'If you take the bait, someone can impersonate you or lock you out of your accounts.\nSo never tap links you didn\'t expect.' },
       { text: '✅ Safe habits:\ncheck the web address, download apps only from official stores, and report & block spammers.' },

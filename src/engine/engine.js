@@ -21,6 +21,7 @@ const { getContent, LANGUAGE_CHOICES } = require('../content');
 const config = require('../config');
 const curriculum = require('../curriculum');
 const { levelInfo, LEVELS } = require('../gamification/xp');
+const { stripEmoji } = require('../util/text');
 
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
@@ -558,11 +559,16 @@ function renderProgress(session, content) {
 
 function renderMenu(content, node) {
   const parts = [];
-  if (node.title) parts.push(node.title);
+  if (node.title) parts.push(`*${stripEmoji(node.title).trim()}*`);
   if (node.body) parts.push('', node.body);
-  parts.push('', ...node.options.map((o) => o.label));
+  // Clean labels: "1️⃣ 🌐 Digital Foundations" → "1  Digital Foundations".
+  parts.push('', ...node.options.map((o) => `${o.input}  ${cleanLabel(o.label)}`));
   parts.push('', node.footer || content.strings.menuFooter);
   return { text: parts.join('\n'), image: node.image };
+}
+
+function cleanLabel(label) {
+  return stripEmoji(label).replace(/^\d+\s*/, '').trim() || label;
 }
 
 // A lesson page may be a plain string (legacy) or a card { text, image }.

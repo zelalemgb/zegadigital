@@ -13,6 +13,7 @@
  */
 
 const config = require('../config');
+const { stripEmoji } = require('../util/text');
 
 function apiUrl(path) {
   const { apiVersion, phoneNumberId } = config.whatsapp;
@@ -166,15 +167,17 @@ function mediaUrl(image) {
  */
 async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
   const msgs = messages || [];
+  // WhatsApp can't render custom icons inline; send clean, emoji-free text.
+  const btns = actions.map((a) => ({ id: a.value, title: stripEmoji(a.label) || a.label }));
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i];
-    const text = typeof m === 'string' ? m : m.text || '';
+    const text = stripEmoji(typeof m === 'string' ? m : m.text || '');
     const link = mediaUrl(m && m.image);
     const isLast = i === msgs.length - 1;
     const useButtons = isLast && actions.length && actionStyle !== 'list' && actions.length <= 3;
     // eslint-disable-next-line no-await-in-loop
     if (useButtons) {
-      await sendButtons(to, text, actions.map((a) => ({ id: a.value, title: a.label })), link);
+      await sendButtons(to, text, btns, link);
     } else if (link) {
       await sendImage(to, link, text);
     } else if (text) {
@@ -182,7 +185,7 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
     }
   }
   if (actions.length && (actionStyle === 'list' || actions.length > 3)) {
-    await sendList(to, 'Tap to choose', 'Menu', actions.map((a) => ({ id: a.value, title: a.label })));
+    await sendList(to, 'Tap to choose', 'Menu', btns);
   }
 }
 

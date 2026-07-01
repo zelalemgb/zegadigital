@@ -46,7 +46,7 @@ module.exports = {
     unrecognised: [
       "Sorry, I didn't understand that.",
       '',
-      'Please reply with a number from the list above, or type MENU for the home screen.',
+      'Please reply with one of the options shown below.',
     ].join('\n'),
 
     exitMessage: [

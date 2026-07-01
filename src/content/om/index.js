@@ -66,7 +66,7 @@ module.exports = {
     unrecognised: [
       'Dhiifama, sirriitti naaf hin galle.',
       '',
-      'Maaloo lakkoofsa baafata keessa jiruun deebisi, ykn Menuu Ijootiif MENU jedhii barreessi.',
+      'Maaloo filannoowwan armaan gadii keessaa tokkoon deebisi.',
     ].join('\n'),
 
     exitMessage: [

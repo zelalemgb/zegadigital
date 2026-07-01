@@ -638,7 +638,8 @@ function deriveActions(session, content) {
   switch (cur.type) {
     case 'home':
       if (!session.track) return [act('🧒 Youth', '1'), act('🧑 Adult', '2'), act('🔎 Explore', '3')];
-      return [act('▶️ Start', '1'), act('📊 Progress', '2'), act('📚 Modules', '3'), act('🧠 Quiz', '4')];
+      // 3 tappable reply buttons (the rest of the options stay in the numbered text).
+      return [act('▶️ Start', '1'), act('📊 Progress', '2'), act('📚 Topics', '3')];
     case 'progress':
       return [act('🏠 Home', 'MENU')];
     case 'menu': {

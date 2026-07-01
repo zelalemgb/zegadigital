@@ -88,6 +88,17 @@ test('quiz completion emits quizFinished with score and pass flag', () => {
   assert.equal(ev.passed, true);
 });
 
+test('PROGRESS and LANGUAGE work as jump-anywhere shortcuts', () => {
+  // Start a lesson, then jump to progress and to the language menu mid-lesson.
+  const prog = run(['Hi', '1', '1', '1', 'PROGRESS'], READY);
+  assert.equal(prog.session.cursor.type, 'progress');
+  assert.match(joined(prog), /Your progress/);
+
+  const lang = run(['Hi', '1', '1', '1', 'LANGUAGE'], READY);
+  assert.equal(lang.session.cursor.type, 'language');
+  assert.match(joined(lang), /Language Selection/);
+});
+
 test('MENU returns home; STOP exits but remembers the track', () => {
   const menu = run(['Hi', '1', '1', '1', 'MENU']);
   assert.equal(menu.session.cursor.type, 'home');

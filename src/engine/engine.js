@@ -101,6 +101,15 @@ function route(session, content, text, cmd) {
   // Resume entry point — what a reminder/nudge quick-reply button maps to.
   if (cmd === 'CONTINUE' || cmd === 'RESUME') return goTo(session, content, 'HOME');
   if (cmd === 'HELP') return goTo(session, content, 'help.menu');
+  // Jump-anywhere shortcuts for language and progress.
+  if (cmd === 'LANGUAGE' || cmd === 'LANG') return goTo(session, content, 'LANGUAGE');
+  if (cmd === 'PROGRESS' || cmd === 'PROFILE' || cmd === 'ME') {
+    if (session.track) {
+      session.cursor = { type: 'progress' };
+      return out(session, [renderProgress(session, content)]);
+    }
+    return goTo(session, content, 'HOME');
+  }
   if (cmd.startsWith('REMIND')) return handleRemind(session, content, cmd);
   if (cmd === 'BASELINE') return offerAssessment(session, content, 'baseline');
   if (cmd === 'FINAL' || cmd === 'ASSESS') return offerAssessment(session, content, 'endline');

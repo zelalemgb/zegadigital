@@ -36,6 +36,7 @@ module.exports = {
       '• Reply with a number to choose an option.',
       '• Reply 0 to go back one step.',
       '• Type MENU anytime for the home screen.',
+      '• Type PROGRESS to see your profile, or LANGUAGE to switch language.',
       '• Type STOP to exit.',
       '',
       "Let's begin!",

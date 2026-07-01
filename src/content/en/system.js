@@ -171,10 +171,10 @@ module.exports = {
       messages: [
         [
           'ℹ️ About Zega Digital ዜጋ ዲጂታል',
-          '🎯 Purpose: To empower Ethiopians with digital literacy skills for safe, confident online navigation.',
+          "OMNI Ethiopia & Meta bring you the Zega Digital Bot—an interactive WhatsApp experience to help you stay safe online, build digital skills, and navigate today's digital world with confidence.",
           '⚖️ Non-Partisan & Neutral: Factual, balanced information without political bias.',
-          "📚 Sources: Adapted from Meta's 'My Digital World' and other credible digital safety resources.",
           '🔒 Privacy: This bot does not store your personal conversations.',
+          '📧 Contact: zegadigital00@gmail.com',
         ].join('\n'),
       ],
     },

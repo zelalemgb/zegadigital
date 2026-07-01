@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Zega Digital — Learn to stay safe online, on WhatsApp</title>
 <meta name="description" content="Free digital-literacy lessons on WhatsApp, in English, Amharic and Afaan Oromo. Learn privacy, passwords, online safety and AI — two minutes at a time." />
-<meta name="theme-color" content="#4f46e5" />
+<meta name="theme-color" content="#345aa0" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
 <link rel="icon" type="image/png" href="/assets/favicon-32.png" />
@@ -19,9 +19,10 @@
 <meta property="og:image" content="/assets/icon-512.png" />
 <style>
   :root {
-    --brand: #4f46e5; --brand2: #7c3aed; --wa: #25d366; --wa-dark: #128c7e;
-    --ink: #12152b; --muted: #5b6178; --line: #e7e9f0; --bg: #ffffff;
-    --soft: #f5f6fb; --radius: 18px;
+    /* ZEGA brand: blue #345aa0, red #ce3b37 */
+    --brand: #345aa0; --brand2: #26436f; --accent: #ce3b37; --wa: #25d366; --wa-dark: #128c7e;
+    --ink: #12203b; --muted: #5b6178; --line: #e7e9f0; --bg: #ffffff;
+    --soft: #f4f7fb; --radius: 18px;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -36,17 +37,19 @@
   /* ── Hero ── */
   .hero {
     position: relative; overflow: hidden; color: #fff;
-    background: radial-gradient(120% 120% at 80% -10%, #7c3aed 0%, #4f46e5 42%, #2e2a86 100%);
+    background: radial-gradient(120% 120% at 80% -10%, #4a6fc0 0%, #345aa0 45%, #1c3660 100%);
     padding: calc(env(safe-area-inset-top) + 22px) 0 64px;
   }
   .hero::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(60% 50% at 15% 110%, rgba(124,58,237,.55), transparent 70%);
+    background: radial-gradient(60% 50% at 15% 110%, rgba(52,90,160,.6), transparent 70%);
   }
   .nav { display: flex; align-items: center; gap: 12px; position: relative; z-index: 2; }
-  .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand { display: flex; align-items: center; gap: 11px; }
   .brand img { width: 38px; height: 38px; border-radius: 10px; }
-  .brand small { display: block; font-weight: 500; opacity: .8; font-size: 12px; letter-spacing: .02em; }
+  .brand .mark { flex: none; }
+  .wordmark { font-weight: 800; font-size: 20px; letter-spacing: .06em; line-height: 1.05; }
+  .brand small { display: block; font-weight: 500; opacity: .82; font-size: 11px; letter-spacing: .02em; }
   .nav .spacer { flex: 1; }
   .nav .ghost { font-size: 13px; opacity: .82; text-decoration: none; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.22); }
   .nav .ghost:hover { background: rgba(255,255,255,.1); }
@@ -59,7 +62,7 @@
   .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.25); }
   .badge-gold { background: rgba(245,158,11,.18); border-color: rgba(251,191,36,.45); color: #fde68a; }
   h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.08; letter-spacing: -0.025em; margin: 18px 0 14px; font-weight: 780; }
-  h1 .accent { background: linear-gradient(90deg,#fff,#c7d2fe); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  h1 .accent { background: linear-gradient(90deg,#fff,#cfe0ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
   .lede { font-size: clamp(16px, 2.4vw, 19px); opacity: .92; max-width: 34ch; }
   .langs { margin-top: 16px; font-size: 14px; opacity: .9; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .langs b { font-weight: 700; }
@@ -97,7 +100,7 @@
 
   /* ── Sections ── */
   section.block { padding: 64px 0; }
-  .eyebrow { color: var(--brand); font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  .eyebrow { color: var(--accent); font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
   h2 { font-size: clamp(24px,3.6vw,34px); letter-spacing: -0.02em; margin: 8px 0 10px; font-weight: 760; }
   .sub { color: var(--muted); max-width: 56ch; }
 
@@ -128,7 +131,7 @@
   .cert p { margin: 0; color: #854d0e; max-width: 62ch; }
   @media (max-width: 640px) { .cert { flex-direction: column; text-align: center; padding: 26px 22px; } }
 
-  .final { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff; border-radius: 26px; padding: 44px 30px; text-align: center; margin: 20px 0 0; }
+  .final { background: linear-gradient(135deg,#3a5fa8,#26436f); color: #fff; border-radius: 26px; padding: 44px 30px; text-align: center; margin: 20px 0 0; }
   .final h2 { color: #fff; }
   .final .cta { justify-content: center; }
 
@@ -146,8 +149,12 @@
   <div class="wrap">
     <nav class="nav">
       <div class="brand">
-        <img src="/assets/icon-192.png" alt="Zega Digital logo" />
-        <div>Zega Digital<small>ዜጋ ዲጂታል · Digital literacy</small></div>
+        <svg class="mark" width="30" height="34" viewBox="0 0 170 340" aria-hidden="true">
+          <rect x="8" y="8" width="154" height="324" rx="30" fill="none" stroke="#fff" stroke-width="15"/>
+          <rect x="70" y="30" width="30" height="10" rx="5" fill="#fff"/>
+          <circle cx="85" cy="306" r="12" fill="#fff"/>
+        </svg>
+        <div class="wordmark">ZEGA<small>My Digital World · Ethiopia</small></div>
       </div>
       <div class="spacer"></div>
       <button id="installBtn" class="ghost" hidden>⬇ Install app</button>
@@ -254,7 +261,7 @@
 
 <footer>
   <div class="wrap foot-grid">
-    <div class="brand" style="color:var(--ink)"><img src="/assets/favicon-32.png" width="22" height="22" alt="" style="border-radius:6px" /> Zega Digital</div>
+    <img src="/img/zega-logo.png" alt="ZEGA — My Digital World Ethiopia" style="height:44px;width:auto" />
     <div class="spacer"></div>
     <a href="/admin">Program manager sign-in</a>
     <span>·</span>

@@ -1,7 +1,7 @@
 /* Zega Digital — service worker. Makes the landing page installable and
    available offline. Cache-first for the app shell, network-first for live
    stats, and the dashboard is never cached (it is auth'd and per-user). */
-const CACHE = 'zega-v2'; // bump on any landing-page / shell change to bust caches
+const CACHE = 'zega-v3'; // bump on any landing-page / shell change to bust caches
 const SHELL = [
   '/',
   '/manifest.webmanifest',

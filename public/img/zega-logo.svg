@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" width="700" height="400" role="img" aria-label="ZEGA — My Digital World Ethiopia">
+  <!-- Smartphone motif -->
+  <g>
+    <rect x="34" y="26" width="150" height="330" rx="30" fill="#345aa0" stroke="#111111" stroke-width="7"/>
+    <rect x="52" y="70" width="114" height="242" rx="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+    <rect x="92" y="47" width="34" height="8" rx="4" fill="#ffffff"/>
+    <circle cx="109" cy="333" r="11" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+  </g>
+  <!-- ZEGA wordmark -->
+  <text x="212" y="238" font-family="'Arial Black','Helvetica Neue',Arial,sans-serif" font-weight="900"
+        font-size="150" letter-spacing="-3" fill="#ce3b37">ZEGA</text>
+  <!-- Tagline -->
+  <text x="214" y="298" font-family="Arial,'Helvetica Neue',sans-serif" font-weight="600"
+        font-size="29" letter-spacing="1.2" fill="#1a1a1a">MY DIGITAL WORLD ETHIOPIA</text>
+</svg>

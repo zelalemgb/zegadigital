@@ -250,10 +250,10 @@ module.exports = {
       messages: [
         [
           'ℹ️ Waa’ee Dijitaala Zeegaa',
-          '🎯 Kaayyoo: Itoophiyaanota dandeettii bu’uuraa dijitaalaa qaban ga’oomsuun karaa imalaa toora interneetii nageenyaafi ofitti amanamummaa qaban uumuu.',
+          "OMNI Ethiopia fi Meta 'Roboti Dijitaala Zeegaa' isiniif fidan—toora interneetii irratti nageenya keessan eeguuf, dandeettii dijitaalaa ijaaruuf, fi addunyaa dijitaalaa har'aa ofitti amanamummaadhaan naanna'uuf kan isin gargaaru muuxannoo WhatsApp walitti-dhufeenyaa.",
           '⚖️ Gartummaarraa bilisa ta’uu: Odeeffannoo haqaa, madaalawaa ta’eefi loogii siyaasaa hin qabne.',
-          '📚 Maddootni: \'Addunyaa Dijiitaalaa Koo\' kan Meetaafi leecalloowwan nageenya dijiitaalaa amanamoo biroo irraa madaqfame.',
           '🔒 Icciitii dhuunfaa: Robotiin kuni haasawaa dhuunfaa keetii hin kuusu.',
+          '📧 Quunnamtii: zegadigital00@gmail.com',
         ].join('\n'),
       ],
     },

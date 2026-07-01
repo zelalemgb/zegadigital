@@ -1,48 +1,168 @@
 'use strict';
 
 /**
- * Amharic (አማርኛ) content pack — PLACEHOLDER / TODO.
+ * Amharic (አማርኛ) content pack.
  *
- * The i18n system deep-merges this object over the English pack, so anything
- * you provide here overrides English and anything you omit falls back to it.
- * That means the bot already works end-to-end in "Amharic" today (it just shows
- * English text) and you can translate incrementally — one string, node, term,
- * or quiz question at a time — without breaking anything.
+ * Deep-merged over English (see ../index.js), so anything not translated here
+ * falls back to English automatically. Keep every `input` / `next` / `answer`
+ * key identical to English — translate only the human-readable text.
  *
- * HOW TO TRANSLATE
- * ----------------
- * Mirror the shape of ../en/*.js. A few examples:
- *
- *   strings: {
- *     onboarding: '👋 ወደ ዜጋ ዲጂታል እንኳን በደህና መጡ! ...',
- *     menuFooter: 'እባክዎ የመረጡትን ቁጥር ይላኩ።',
- *   },
- *
- *   nodes: {
- *     'youth.menu': {
- *       title: '🧒 የወጣቶች ክፍል',
- *       body: '...',
- *       options: [
- *         { input: '1', label: '1️⃣ 🌐 ዲጂታል መሰረታዊ ነገሮች', next: 'youth.foundations' },
- *         // ...keep `input` and `next` identical to English; translate only `label`.
- *       ],
- *     },
- *   },
- *
- *   // Lesson bodies are arrays of message strings, in the same order as English:
- *   // 'youth.foundations.passwords': { messages: ['💡 ...', '🔐 ...'] },
- *
- *   glossary: { terms: [{ input: '1', label: 'አልጎሪዝም', definition: '...' }, ...] },
- *   quizzes: { youth: { questions: [{ q: '...', options:{A:'...'}, explain:'...' }] } },
- *
- * Keep every `input` / `next` / `answer` key EXACTLY as in English — translate
- * only the human-readable text. Mismatched keys break navigation.
+ * Coverage (batch 1): onboarding, navigation menus, glossary, about, help,
+ * and system strings. Lessons, quizzes and per-lesson checks still fall back to
+ * English and are translated in later batches.
  */
 
 module.exports = {
   meta: { code: 'am', name: 'Amharic', complete: false },
-  // strings: {},
-  // nodes: {},
-  // glossary: {},
-  // quizzes: {},
+
+  strings: {
+    onboarding: [
+      'ወደ Zega Digital ዜጋ ዲጂታል በደህና መጡ 👋',
+      '',
+      'የኦንላይን ደህንነትን መጠበቅ፣ ማህበራዊ ሚዲያን መረዳት እና አውንታዊ የኦንላይን ተሞክሮ መፍጠር የሚያስችሉ ወሳኝ የዲጂታል ክህሎቶችን እንዲገነቡ ልረዳዎ እችላለሁ።',
+      '',
+      'መጀመሪያ ቋንቋ ይምረጡ፡',
+      '1  እንግሊዝኛ',
+      '2  አማርኛ',
+      '3  አፋን ኦሮሞ',
+    ].join('\n'),
+
+    navTip: [
+      'ጥቂት ፈጣን ጥቆማዎች፡',
+      '',
+      '• አማራጭ ለመምረጥ ቁጥር ይላኩ።',
+      '• አንድ ደረጃ ወደኋላ ለመመለስ 0 ይላኩ።',
+      '• በማንኛውም ጊዜ ወደ መነሻ ገጽ ለመመለስ MENU ይላኩ።',
+      '• መገለጫዎን ለማየት PROGRESS፣ ቋንቋ ለመቀየር LANGUAGE ይላኩ።',
+      '• ለመውጣት STOP ይላኩ።',
+      '',
+      'እንጀምር!',
+    ].join('\n'),
+
+    unrecognised: [
+      'ይቅርታ፣ ያሉትን አልገባኝም።',
+      '',
+      'እባክዎ ከላይ ካለው ዝርዝር ውስጥ ቁጥር ይላኩ፣ ወይም ወደ መነሻ ገጽ ለመመለስ MENU ይላኩ።',
+    ].join('\n'),
+
+    exitMessage: [
+      'Zega Digital ዜጋ ዲጂታልን ስለተጠቀሙ እናመሰግናለን።',
+      'ዛሬ የሚጠቅም ነገር እንደተማሩ ተስፋ እናደርጋለን።',
+      'እንደገና ለመጀመር በማንኛውም ጊዜ Hi ይላኩ። የኦንላይን ደህንነትዎን ይጠብቁ!',
+    ].join('\n'),
+
+    menuFooter: 'በመረጡት ቁጥር ይመልሱ።',
+
+    completionBadge: [
+      'ትምህርቱ ተጠናቋል፡ {{lesson}}። በጣም ጥሩ!',
+      '',
+      '1  ቀጣይ ትምህርት',
+      '0  ወደ ርዕሶች መመለስ',
+      'MENU  መነሻ',
+    ].join('\n'),
+
+    lessonNav: 'ለመቀጠል NEXT ይላኩ፣ ወደኋላ ለመመለስ 0፣ ወይም ለመነሻ MENU',
+  },
+
+  glossary: {
+    intro: [
+      '📖 የቃላት መፍቻ — የቁልፍ ቃላት አጭር ፍቺዎች።',
+      'ለሚፈልጉት ፍቺ ቁጥር ይላኩ፣ ወይም ለመመለስ 0 ይላኩ።',
+    ].join('\n'),
+    terms: [
+      { label: 'አልጎሪዝም', definition: 'በአጠቃቀሞ ላይ ተመስርቶ በማህበራዊ ሚዲያ ላይ የሚያዩትን የሚወስኑ የኮምፒውተር ህጎች።' },
+      { label: 'የብሩት ፎርስ ጥቃት', definition: 'ትክክለኛው እስኪገኝ ድረስ በሺዎች የሚቆጠሩ የይለፍ ቃል ጥምረቶችን በሶፍትዌር የመሞከር የጠለፋ ዘዴ።' },
+      { label: 'የማረጋገጫ አድልዎ', definition: 'ቀድመን ያመንነውን የሚደግፍ መረጃ የመፈለግ እና የማመን አዝማሚያ።' },
+      { label: 'ኩኪዎች', definition: 'ማንነትዎን ለማስታወስ ድረ-ገጾች በመሣሪያዎ ላይ የሚያከማቿቸው ትናንሽ ፋይሎች።' },
+      { label: 'የተሳሳተ መረጃ', definition: 'ሰዎችን ለማታለል ሆን ተብሎ የተፈጠረ እና የተሰራጨ የውሸት መረጃ።' },
+      { label: 'ዲጂታል አሻራ', definition: 'የሚፖስቱትን፣ የሚያጋሩትን፣ የሚወዱትን፣ አስተያየት የሚሰጡበትን እና ሌሎች ስለእርስዎ የሚፖስቱትን ጨምሮ ኦንላይን ስለእርስዎ የሚገኝ መረጃ።' },
+      { label: 'ዶክሲንግ', definition: 'ያለፈቃዳቸው የሌላ ሰው የግል መረጃን ኦንላይን ማጋራት። ጎጂ እና ብዙውን ጊዜ ህገ ወጥ ነው።' },
+      { label: 'ኢኮ ቻምበር', definition: 'በአልጎሪዝም እና በማረጋገጫ አድልዎ ምክንያት የራስዎን አመለካከት የሚያንጸባርቅ ይዘት ብቻ የሚያዩበት ሁኔታ።' },
+      { label: 'HTTPS', definition: 'ደህንነቱ የተጠበቀ የድረ-ገጾች ግንኙነት። \'S\' ማለት ግንኙነትዎ ተመስጥሯል ማለት ነው።' },
+      { label: 'ማንነት ስርቆት', definition: 'አንድ ሰው የግል መረጃዎን ተጠቅሞ እርስዎን ለመምሰል ሲሞክር። ለምሳሌ በስምዎ አካውንቶች መክፈት።' },
+      { label: 'ማልዌር', definition: 'በመሣሪያዎ ላይ ሊሰልል፣ መረጃ ሊሰርቅ፣ ፋይሎችዎን ሊቆልፍ፣ ወይም ለጠላፊዎች ቁጥጥር ሊሰጥ የሚችል ጎጂ ሶፍትዌር።' },
+      { label: 'ሜታ ዳታ', definition: 'የዳታ ዳታ። ለምሳሌ የገቡበት ጊዜ፣ የፖሰቱበት ጊዜ፣ የተጠቀሙበት አካባቢ፣ የተገናኙት ሰው እና የመሳሰሉት።' },
+      { label: 'MFA / 2FA', definition: 'ከይለፍ ቃልዎ በኋላ ሁለተኛ የደህንነት ደረጃ መጨመር፣ ለምሳሌ ወደ ስልክዎ የሚላክ ኮድ።' },
+      { label: 'ፊሺንግ', definition: 'የይለፍ ቃሎችን ወይም የግል መረጃን አታለው ለመስረቅ ከእውነተኛ ድርጅት በማስመሰል የሚላክ ሐሰተኛ መልእክት።' },
+      { label: 'PII', definition: 'እርስዎን ሊለይ የሚችል እንደ አድራሻዎ፣ መታወቂያ ቁጥርዎ፣ ወይም የባንክ መረጃ ያሉ የግል መረጃዎች።' },
+      { label: 'ራንሰምዌር', definition: 'ፋይሎችዎን በመቆለፍ ለማስከፈት ክፍያ (ቤዛ) የሚጠይቅ የማልዌር አይነት።' },
+      { label: 'ማህበራዊ ምህንድስና', definition: 'ታማኝ ሰው ወይም ድርጅት በመምሰል ኮምፒውተሮችን ሳይሆን ሰዎችን የማታለል ዘዴ።' },
+      { label: 'አፕስታንደር', definition: 'ኦንላይን መጥፎ ባህሪ ሲመለከት ዝም ብሎ ከማለፍ ይልቅ አውንታዊ እርምጃ የሚወስድ ሰው።' },
+    ],
+  },
+
+  nodes: {
+    MAIN: {
+      title: '🏠 ዋና ማውጫ',
+      body: '👉 እባክዎ ይምረጡ፡',
+      options: [
+        { label: '🧒 የወጣቶች ሞጁል (ዕድሜ 13–17)' },
+        { label: '🧑 የአዋቂዎች ሞጁል (ዕድሜ 18+)' },
+        { label: '🌍 ቋንቋ ምርጫ' },
+        { label: 'ℹ️ ስለ ዜጋ ቦት' },
+        { label: '📖 የቃላት መፍቻ' },
+        { label: '🆘 እርዳታ እና መርጃዎች' },
+        { label: '❌ ውጣ' },
+      ],
+    },
+
+    'youth.menu': {
+      title: '🧒 የወጣቶች ሞጁል',
+      body: [
+        '🎉 በጣም ጥሩ! የወጣቶች ትራክን መርጠሃል።',
+        '📚 ስለ ኦንላይን ደህንነት፣ ግላዊነት እና ሌሎችን ተማር።',
+        '✍️ ዛሬ ምን መማር ትፈልጋለህ?',
+      ].join('\n'),
+      options: [
+        { label: '🌐 ዲጂታል መሰረቶች' },
+        { label: '💚 ዲጂታል ጤንነት' },
+        { label: '🤝 ዲጂታል ተሳትፎ' },
+        { label: '💻 ዲጂታል እድሎች' },
+        { label: '🛡️ የኦንላይን ደህንነት እና ጤንነት' },
+        { label: '🤖 የሰው ሰራሽ አስተውሎት (AI) ግንዛቤ' },
+        { label: '🧠 ፈተና' },
+        { label: '🔙 ወደ ዋናው ማውጫ' },
+      ],
+    },
+
+    'adult.menu': {
+      title: '🧑 የአዋቂዎች ሞጁል',
+      body: [
+        '🎉 በጣም ጥሩ! የአዋቂ ትራክ መርጠዋል።',
+        '📚 የኦንላይን ደህንነት፣ ግላዊነት እና ሌሎችን ይማሩ።',
+        '✍️ ዛሬ ስለ ምን መማር ይፈልጋሉ?',
+      ].join('\n'),
+      options: [
+        { label: '📰 የሚዲያ ግንዛቤ' },
+        { label: '🔐 ግላዊነት' },
+        { label: '🛡️ የኦንላይን ደህንነት' },
+        { label: '🛡️ የኦንላይን ደህንነት እና ጤንነት' },
+        { label: '✨ የሰው ሰራሽ አስተውሎ (AI) ግንዛቤ' },
+        { label: '🧠 ፈተና' },
+        { label: '🔙 ወደ ዋናው ማውጫ' },
+      ],
+    },
+
+    'help.menu': {
+      title: '🆘 እርዳታ እና መርጃዎች',
+      options: [
+        { label: '📞 ለሜታ ሪፖርት ማድረግ (ፌስቡክ/ኢንስታግራም/ዋትሳፕ)' },
+        { label: '🔒 የተጠለፈ አካውንት ማስመለስ' },
+        { label: '🔗 ተጨማሪ የመማሪያ መርጃዎች' },
+        { label: 'ወደ ዋና ማውጫ ተመለስ' },
+      ],
+    },
+
+    about: {
+      messages: [
+        [
+          'ℹ️ ስለ Zega Digital ዜጋ ዲጂታል',
+          '🎯 ዓላማ፡ ደህንነቱ የተጠበቀ እና በራስ መተማመን የተሞላ የኦንላይን አጠቃቀም አስቻይ የዲጂታል እውቀትና ክህሎቶችን ለኢትዮጵያውያን ማስታጠቅ።',
+          '⚖️ ገለልተኝነት፡ ያለፖለቲካ አድልዎ እውነተኛ እና ሚዛናዊ መረጃ ማቅረብ።',
+          '📚 ምንጮች፡ ከሜታ \'ማይ ዲጂታል ወርልድ\' እና ከሌሎች ታማኝ የዲጂታል ደህንነት መርጃዎች የተወሰደ።',
+          '🔒 ግላዊነት፡ ይህ ቦት የግል ውይይቶችዎን አያከማችም።',
+        ].join('\n'),
+      ],
+    },
+  },
 };

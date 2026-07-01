@@ -1,0 +1,252 @@
+{
+ "youth": {
+  "questions": [
+   {
+    "q": "Haala dijitaalaa keessatti 'iccitii dhuunfaa' jechuun maal jechuudha?",
+    "options": {
+     "A": "Odeeffannoo kee hunda guutumaan guututti nama hunda jalaa dhoksi",
+     "B": "Dandeettii waan namoonni biroo waa'ee kee beekan too'achuuf qabdu",
+     "C": "Tasumaa miidiyaa hawaasaa fayyadamuu dhiisuu",
+     "D": "Maatii kee qofaaf odeeffannoo qooduu"
+    },
+    "answer": "B",
+    "explain": "Icciitiin Dhuunfaa waa’ee TOO’ANNOO ti — eenyu akka si beeku, yoom, maaliif akka ta’e murteessuudha. Kana jechuun nama hunda jalaa dhoksuu jechuu miti."
+   },
+   {
+    "q": "Nama gonkumaa wal hinbeekne tokkotu gaaffii hiriyummaa siif dhiyeesse. Teessoo mana jireenyaa kee si gaafatani. Maal gochuu qabda?",
+    "options": {
+     "A": "Ittan hima — hiriyaa gaarii fakkaatu",
+     "B": "Hiriyummaa waliinii yoo qabaanne qofaan itti hima",
+     "C": "Diduudha — namni toora interneetii irratti qofa walbeektan teessoo mana jireenyaa kee baruu hinqabu",
+     "D": "Dura hiriyaa kee gaafadhu, achii booda murteessi"
+    },
+    "answer": "C",
+    "explain": "Yeroo hunda MAALIIF akka namni tokko odeeffannoo kee barbaadu ofgaafadhu. Namni hinbeekne tokko toora interneetii irratti sababa seera qabeessa teessoo mana jireenyaa kee barbaaduuf hinqabu. Yoo waa shakkite itti hin himin."
+   },
+   {
+    "q": "Kanneen keessaa jechi darbiinsaa icciitii CIMAA isa kami?",
+    "options": {
+     "A": "Kebede2008",
+     "B": "password123",
+     "C": "Laga-Maangoo-Urjii-Cuquliisa9!",
+     "D": "123456"
+    },
+    "answer": "C",
+    "explain": "Bifbiraanbarbuu jechoota 4+ jechoota wal hin qabanne, lakkoofsaafi mallattoowwan waliin walitti makaman, dheeraa, yaadatamaafi butamuuf garmalee rakkisaa kan ta’e. Odeeffannoo dhuunfaa kan akka maqaafi bara dhalootaa wantoota jalqabaa hattootni toora interneetii jalqaba yaalanidha."
+   },
+   {
+    "q": "Mirkaneessi Sadarkaalee Hedduu (MFA/2FA) maal hojjata?",
+    "options": {
+     "A": "Ofumaan jecha darbiinsaa icciitii cimaa battala siif uuma",
+     "B": "Jecha darbiinsaa icciitii kee irratti adeemsa mirkaneessaa lammaffaa, waan akka koodii bilbila kee irratti siif ergamuu itti dabala",
+     "C": "Jechoota darbiinsaa icciitii kee hunda bakka tokkotti kuusa",
+     "D": "Haattootni toora interneetii akka weebsaayitoota hin daawwatne danqa"
+    },
+    "answer": "B",
+    "explain": "Mirkaneessi Sadarkaalee Hedduu (MSH) eegumsa nageenyaa dacha dabalataan itti ida’a. Hattuun toora interneetii tokko jecha darbiinsaa icciitii kee yoo beekellee, mirkaneessa sadarkaa lammaffaa keetiin alatti akkaawuntii kee keessa seenuu hin danda’u — yeroo baay’ee bilbila kee osoo hin qabaatin akkaawuntii kee argachuu hin danda'ani."
+   },
+   {
+    "q": "Ergaan: 'Sa'aatii 24 booda akkaawuntii kee ni haqama! Jecha darbiinsa icciitii kee mirkaneessuuf AMMA astuqi.' Jedhu yoo siif dhufe maal gochuu qabda?",
+    "options": {
+     "A": "Hidhaa sana irratti battaluma cuqaasi — ariifachiisaa fakkaata",
+     "B": "Akka akeekkachiisaatti hiriyoota keetiif dabarsi",
+     "C": "Tuffadhuu dhiisi ykn haqi — kuni gowwoomsaanii hatuudha",
+     "D": "akkaawuntii kee mirkaneessuuf jecha darbiinsaa icciitii kee waliin deebii kenni"
+    },
+    "answer": "C",
+    "explain": "Ariifannaafi sodaan gowwoomsaa hannaa keessatti tooftaalee ijoodha. Danaan toora interneetii seera qabeessa ta'e kumiyyuu ergaadhaan jecha darbiinsaa icciitii kee hin gaafatu. Gabaasiitii haqi — hidhaa sana irratti HIN cuqaasin."
+   },
+   {
+    "q": "Hojjachiisaan gara fuulduraa afgaaffii siif gochuun dura maqaa kee toora interneetirra barbaada. Maal argachuu dandaʼu?",
+    "options": {
+     "A": "Homaa — interneetiin kan dhuunfaati",
+     "B": "Odeeffannoo ati dhuunfan akka isaan argan barbaaddu qofa",
+     "C": "Maxxansa miidiyaa hawaasaa kee, suuraa, garagalchaafi yaada namoota biroo irraa siif kenname",
+     "D": "Sanada ogummaa kee qofa"
+    },
+    "answer": "C",
+    "explain": "Ashaaraan dijitaalaa kee maxxansa kee, yaada, waan jaalatte, garagalcha namoota birootiin sitti hidhamaniifi kkf ofkeessatti qabata. Kanaafuu, yeroo hunda maqaa dhuunfaa kee barbaaduun waan mul'atu too’achuun barbaachisaadha."
+   },
+   {
+    "q": "Hordoftoota 300 qabda. Tokkoon tokkoon isaanii hordoftoota 300 qabu. Yoo hundi isaanii barreeffama kee qoodani, yoo BAAY’ATE namni meeqa arguu danda'a?",
+    "options": {
+     "A": "300",
+     "B": "3,000",
+     "C": "9,000",
+     "D": "90,300"
+    },
+    "answer": "D",
+    "explain": "300 + (300 × 300) = 90,300 ta'a. Barreeffamni keetin namoota ati beektu bira darbee fagoo deemuu danda'a. Maxxansuu keetiin dura sirriitti itti yaadi — keessumaa waan dhuunfaa ykn miira namaa kakaasu kamiyyuu."
+   },
+   {
+    "q": "Hiriyaan kee heeyyama isaanii malee suuraa hiriyaa keessan daree biraa jiruu waan nama kofalchiisu siif erge. Tarkaanfiin itti gaafatamummaa guddaa qabu maali?",
+    "options": {
+     "A": "Qoodi — qoosaadha malee homaa miti",
+     "B": "Olkaa’i malee hin qoodini",
+     "C": "Hin qoodini; hiriyaan keessan kuni akka beeku taasisi; fedhii hiriyaa keessanii kanaan ala qooduun sirrii miti",
+     "D": "Barreeffama nama kofalchiisu itti dabaluun maxxansi"
+    },
+    "answer": "C",
+    "explain": "Suuraa nama tokkoo heeyyama isaa malee waliif qooduun miidhaa kan hin qabne fakkaatullee garuu iccitii dhuunfaasaa sarbuudha. Namni dhugaan suuraa nama biraa olka’ee dhugaa dubbate, amala kabajaa fakkeenya gaarii ta’udha."
+   },
+   {
+    "q": "Kanneen armaan gadii keessaa mallattoo hariiroo toora interneetii GAARII HINTAANEE kan agarsiisu isa kami?",
+    "options": {
+     "A": "Walqunnamtii gaarummaafi ifa ta’e",
+     "B": "Icciitii dhuunfaa waliif kabajuu",
+     "C": "Hiriyaa jecha darbiinsaa icciitii kee akka qoodduuf si gaafatuufi ergaa gabaabaa dhuungaa kee sijalaa ilaalu",
+     "D": "Wal deeggaruu"
+    },
+    "answer": "C",
+    "explain": "Jechoota icciitii gaafachuufi ergaawwan hordoffii mallattoo amala nama too’achuuti — hariiroo kamiyyuu keessatti, toora interneetii irrattis ta’ee toora interneetiin alaatti gochi akkasii gaarii miti. Hariiroo gaariin hordoffii osoo hintaane wal amantaa irratti ijaarama."
+   },
+   {
+    "q": "' Algoriizimii miidiyaa hawaasaa' maali?",
+    "options": {
+     "A": "Akaakuu jecha darbiinsaa icciitii cimaa",
+     "B": "Seera amala kee irratti hundaa'uun qabiyyeen akkamii akka mul’atu murteessudha",
+     "C": "Haala ergaawwan sobaa akka calaltu si gargaarudha",
+     "D": "Saajoo icciitii maxxansawwan kee dhoksudha"
+    },
+    "answer": "B",
+    "explain": "Algoriizimii miidiyaa hawaasaa waan ati jaallattu, qooddattu, ilaaltuufi barbaaddu hordofa — sana booda kanuma caalaa sitti agarsiisa. Kunis golee sagalee dhageessisaa uumuu danda’a, kunis ilaalcha adda addaatiif saaxilamuu kee daangeessa."
+   },
+   {
+    "q": "Namni tokko maxxansa kee Inistaagiraamii irratti yaadota gaarii hintaane kenne, ati garuu hanga ammaatti ofirraa danquu hin barbaadne. Meeshaa kam dursa fayyadamuutu GAARII dha?",
+    "options": {
+     "A": "Dhoksuu (Mute)",
+     "B": "Battaluma gabaasuu",
+     "C": "Daangessuu (Restrict)",
+     "D": "Eenyummeessa kee haquu"
+    },
+    "answer": "C",
+    "explain": "Callisanii daangessuun waan namni tokko osoo isaan hin beeksisin eenyummeessa kee irratti arguufi hojjachuu danda'u jalaa daangeessa —suuta suutaan waldhabdee uumamuu malu hambisuuf mijataa dha. Yoo amalli suni itti fufe gara Gabaasuu ykn Ugguruutti ce’uu ni dandeessa."
+   },
+   {
+    "q": "Yoo umuriin kee waggaa 16 gadi ta'eefi Inistaagiraamiif haaraa taate, akkaawuntiin kee maal ta’uu mala?",
+    "options": {
+     "A": "Heyyamuu — appilikeeshiniin bilisaa yeroo hunda heyyama dabalataa waan gaafataniif",
+     "B": "Hiriyyaan keetis appilikeeshinichaa yoo tajaajilame qofa heyyamuu",
+     "C": "Heyyama dhowwachuu — appilikeeshiniin AI ergaa kee (SMS) dubbisuuf sababa gahaa fi seeraa hin qabu",
+     "D": "Rakkoon hamaan yoo uumame qofa appilikeeshinicha haquu"
+    },
+    "answer": "C",
+    "explain": "Meetaan akkaawuntii umuriin isaanii waggaa 16 gadi ta'e ofumaan gara dhuunfaatti inistaagiraamii irratti sirreessa. Kana jechuun namootni hin beekne heeyyama kee malee si hordofuu ykn ergaa siif erguu hin danda’an jechuudha — kunis haala nageenyaa barbaachisaa ofkeessaa qaba."
+   }
+  ]
+ },
+ "adult": {
+  "questions": [
+   {
+    "q": "Kanneen armaan gadii keessaa kamtu qaama ashaaraa dijitaalaa keessanii MITI?",
+    "options": {
+     "A": "Suuraawwan miidiyaa hawaasaa irratti fe’aman",
+     "B": "Yaada ati maxxansa namoota biroo irratti kennitu",
+     "C": "Yaada ati qabdu garuu kan gonkumaa hin barreessine ykn hin maxxansine",
+     "D": "Barreeffamoota oduu Weebsaayitoota irraa qoodde"
+    },
+    "answer": "C",
+    "explain": "Ashaaraan dijitaalaa kee waan ati maxxansitu, qooddattu, jaalattuufi yaada kennitu hunda — akkasumas, waan namootni biroon waa’ee kee maxxansan ofkeessatti qabata. Yaadni dhuunfaa gonkumaa toora interneetii irratti hin ibsamne ashaaraa dijiitaalaa keessatti hin mul’atu."
+   },
+   {
+    "q": "Oduu yaada kee deeggaru qooduu barbaadda, garuu madda amanamaa irraa ta'uun isaa mirkanaa'aa miti. Mala THINK fayyadamuun, kamirratti DURSA xiyyeeffachuu qabda?",
+    "options": {
+     "A": "H (Helpful) — Na gargaaraa?",
+     "B": "T (True) — Dhugaadhaa?",
+     "C": "K (Kind) — Gaarummaa qabaa?",
+     "D": "N (Necessary) — Barbaachisaadhaa?"
+    },
+    "answer": "B",
+    "explain": "Mala THINK Dhugaa irraa eegala. Odeeffannoo sobaa qooduun — osoo itti hin yaadin illee — odeeffannoo dogoggoraa babal’isa. Yeroo hunda qooduun dura amanamummaa madda tokkoo mirkaneessi."
+   },
+   {
+    "q": "‘Loogii mirkaneessuu' jechuun maali?",
+    "options": {
+     "A": "Haala miidiyaa hawaasaa irratti seensa kee mirkaneessu",
+     "B": "Amala odeeffannoo duraan yaaddu deeggaruu barbaaduufi amanuu",
+     "C": "Gosa haleellaa saayibarii ilaalcha kee irratti xiyyeeffate",
+     "D": "Haala saajoo adeemsa miidiyaa hawaasaa"
+    },
+    "answer": "B",
+    "explain": "Loogii mirkaneessuun odeeffannoo ilaalcha keenyaan walsimu akka adda baafannu nu taasisa — yaada gaarii qabaatanillee odeeffannoo dogoggoraa babal’isuun salphaadha. Hubannoo gaarii qabaachuun waantota akkanaa irra-aanuuf tarkaanfii jalqabaati."
+   },
+   {
+    "q": "Echo chamber irraa fagaachuuf, tooftaan GAARII ta’e kanneen armaan gadii keessaa isa kami?",
+    "options": {
+     "A": "akkaawuntota guutummaatti itti amante qofa hordofi",
+     "B": "Miidiyaa hawaasaa irraa guutummaatti fagaachuu",
+     "C": "Maddoota oduufi ilaalchawwan adda addaa amanamoo ta’an dammaqinaan barbaadi",
+     "D": "Qabiyyee uummata keetii qofa qoodi"
+    },
+    "answer": "C",
+    "explain": "Maddoota adda addaa amanamoo ta’an waliin dammaqinaan hirmaachuun hubannoo addunyaa guutuu sirrii ta’e akka horattu si gargaara; akkasumas, amala karaawwan ilaalcha barame qofa sitti agarsiisu ni morma."
+   },
+   {
+    "q": "Kanneen armaan gadii keessaa fakkeenyi Odeeffannoo Dhuunfaa Adda Baasu isa kami?",
+    "options": {
+     "A": "Haalluu ati jaalattuu",
+     "B": "Suuraa gammoo wayita aduun lixuuf jirtu ati kaaftee",
+     "C": "Lakkoofsa waraqaa eenyummaa mootummaan siif kennee",
+     "D": "Maqaa kitaaba si gammachiisee"
+    },
+    "answer": "C",
+    "explain": "Odeeffannoo Dhuunfaa Adda Baasu jechuun kallattiinis ta’e alkallattiin daataa waayee kee kamiyyuu adda baasuu danda’udha. Kunis lakkoofsa eenyummaa, teessoo manaa, ibsa baankii, daataa baayoomeetiriifi seenaa mana yaalaa kee dabalata. Odeeffannoo kanneen ofeeggannoon eegadhu."
+   },
+   {
+    "q": "Barreeffamoota miidiyaa hawaasaa keessan yeroo hunda odeeffannoo iddoo kennuun balaan icciitii dhuunfaa irratti fidu inni guddaan maali?",
+    "options": {
+     "A": "Daataa moobaayilaa garmalee fayyadama",
+     "B": "Nama maxxansa kee arguu danda'u kamiifuu hojii idileefi haala bakka kee itti mul'isa",
+     "C": "Maxxansi kee bu'aa barbaachisu keessatti akka hin mul'anne dhorka",
+     "D": "Baatirii bilbila kee sijalaa fixa"
+    },
+    "answer": "B",
+    "explain": "Yeroo hunda barreeffamotni odeeffannoo iddoo ibsan bakka ati jirtu — akkasumas, bakka ati akka idileetti deemtu (mana, bakka hojii, jiimii, mana barumsaa) sirriitti namoota birootti himu. Namoonni ati hinbeekne kana fayyadamuun sochii kee hordofuu danda’u. Kanaafuu, ibsituu iddoo ati jirtu agarsiisu cufi."
+   },
+   {
+    "q": "‘Nama Saaxiluu (doxxing)’ jechuun maali?",
+    "options": {
+     "A": "Mala jechoota icciitii cimaa uumuu",
+     "B": "Heeyyama malee odeeffannoo dhuunfaa nama biraa toora interneetii irratti gadi dhiisuu",
+     "C": "Haala icciitii Facebook irratti",
+     "D": "Akaakuu iimeelii sobaa"
+    },
+    "answer": "B",
+    "explain": "Nama Saaxiluu jechuun odeeffannoo dhuunfaa nama tokkoo — kan akka teessoo manaa, lakkoofsa bilbilaa, ykn bakka hojii — heeyyama isaanii malee toora interneetii irratti maxxansuudha. Kunis miidhaa qaba; yeroo baay’ee seeraan aladhas; akkasumas, danaawwan toora interneetii gurguddoo hunda irratti qajeelfama hawaasaa jiru ni cabsa."
+   },
+   {
+    "q": "Maaliif Wi-Fi uummataa irratti baankii onlaayinii hojjachuu irraa fagaachuu qabdu?",
+    "options": {
+     "A": "Wi-Fi uummataa marsariitiiwwan baankiidhaaf baay’ee suuta jedha",
+     "B": "Baankotni Wi-Fi irratti daldala hin heeyyamani",
+     "C": "Namootni biroo neetiwoorkii tokko irratti argaman daataa keessan isin jalaa butuu ni danda'u",
+     "D": "Baatirii bilbila keessanii dafee fixa"
+    },
+    "answer": "C",
+    "explain": "Neetiworkiin Wi-Fi uummataa yeroo baay’ee amansiisaa miti. Hattootni neetiwoorkii tokko irratti argaman meeshaalee daataa ati ergituufi fudhattu ittiin butuu danda’an fayyadamuun, ragaa baankii kee dabalatee, odeeffannoo kee sijalaa butuu ni danda'u. Kanaafuu, daddabarsa murteessoo ta’an kamiifuu daataa moobaayilaa fayyadami."
+   },
+   {
+    "q": "Yeroo sakatta’iinsa nageenya akkaawuntota idilee maal gochuu qabda?",
+    "options": {
+     "A": "Maqaa fayyadamaa kee jijjiiri",
+     "B": "Maxxansaalee kee durii hunda haqi",
+     "C": "Kutaa seensaa tajaajilarra jiru ilaali, deebistuu odeeffannoo haaromsi; heeyyama aappii ilaali.",
+     "D": "Beeksistuu hunda cufi"
+    },
+    "answer": "C",
+    "explain": "Sakatta'iinsa nageenyaa jechuun bakka itti marsaariitii toora interneetiitti seente gamaaggamuun keessaa ba’uu kee mirkaneeffachuu, iimeeliifi bilbilli kee bakkatti deebi'uusaa mirkaneeffachuu, aappiin qaama sadaffaa kumiyyuu akkaawuntii kee argachuu danda’uusaa ilaaluufi cimina jecha darbiinsaa icciitii kee madaaluun mirkaneeffachuu jechuudha."
+   },
+   {
+    "q": "Fuula Feesbuukii kee irratti barreeffamootni ati hinbarreessine wayita mul'atan ni hubatta. Tarkaanfiin kee JALQABAA maalidha?",
+    "options": {
+     "A": "Saffisaan kompiutara/bilbila barreessuu danda'uu",
+     "B": "Odeeffannoo baay'ee sammuutti qabatanii tursiisuu",
+     "C": "Caraa xiinxala dhimmaa (critical thinking), beekumsi aadaa, fi dandeettiin meeshaalee AI qajeelchuu fi madaaluu",
+     "D": "Miidiyaalee hawaasallaa hamma danda'ame baay'inaan tajaajiluu"
+    },
+    "answer": "C",
+    "explain": "Hatattamaan tarkaanfii fudhadhu. Gara Giddugala Gargaarsa Danaa Interneetii dhaqi; akkaawuntii kee balaaf saaxilamuusaa gabaasi; jecha darbiinsaa icciitii kee jijjiiri; mirkaneessa sadarkaa lammaffaa tolchi; akkasumas, meeshaalee hin beekamne kamiyyuu haquu keefi turtii sochii keetii ilaali. Sana booda namoota waliin quunnamtii qabdan beeksisi."
+   }
+  ]
+ }
+}

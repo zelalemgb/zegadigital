@@ -12,8 +12,32 @@
  * English and are translated in later batches.
  */
 
+// Quiz questions extracted from the Afaan Oromo doc (scripts/parse_quiz.py).
+const quiz = require('./quiz.json');
+
 module.exports = {
   meta: { code: 'om', name: 'Afaan Oromo', complete: false },
+
+  quizzes: {
+    youth: {
+      intro: [
+        '🧠 Yeroo Battallee!',
+        'Waa’ee nageenya, iccitii dhuunfaafi dandeettii dijitaalaa baratte qoramta.',
+        '📋 Gaaffii 12 — A, B, C ykn D deebisi.',
+        'Darbuuf SKIP, ba’uuf MENU.',
+      ].join('\n'),
+      questions: quiz.youth.questions,
+    },
+    adult: {
+      intro: [
+        '🧠 Yeroo Battallee!',
+        'Beekumsa miidiyaa, iccitii dhuunfaafi nageenya toora interneetii irratti baratte qoramta.',
+        '📋 Gaaffii 10 — A, B, C ykn D deebisi.',
+        'Darbuuf SKIP, ba’uuf MENU.',
+      ].join('\n'),
+      questions: quiz.adult.questions,
+    },
+  },
 
   strings: {
     onboarding: [

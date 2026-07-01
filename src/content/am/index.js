@@ -12,8 +12,32 @@
  * English and are translated in later batches.
  */
 
+// Quiz questions extracted from the Amharic doc (scripts/parse_quiz.py).
+const quiz = require('./quiz.json');
+
 module.exports = {
   meta: { code: 'am', name: 'Amharic', complete: false },
+
+  quizzes: {
+    youth: {
+      intro: [
+        '🧠 የፈተና ጊዜ!',
+        'በኦንላይን ደህንነት፣ ግላዊነት እና ዲጂታል ክህሎት ላይ ያገኙትን እውቀት ይፈትሹ።',
+        '📋 13 ጥያቄዎች — A፣ B፣ C ወይም D ይመልሱ።',
+        'ለመዝለል SKIP፣ ለመውጣት MENU።',
+      ].join('\n'),
+      questions: quiz.youth.questions,
+    },
+    adult: {
+      intro: [
+        '🧠 የፈተና ጊዜ!',
+        'በሚዲያ ግንዛቤ፣ ግላዊነት እና የኦንላይን ደህንነት ላይ ያገኙትን እውቀት ይፈትሹ።',
+        '📋 16 ጥያቄዎች — A፣ B፣ C ወይም D ይመልሱ።',
+        'ለመዝለል SKIP፣ ለመውጣት MENU።',
+      ].join('\n'),
+      questions: quiz.adult.questions,
+    },
+  },
 
   strings: {
     onboarding: [

@@ -27,9 +27,11 @@ function deepMerge(base, override) {
   if (override === undefined) return clone(base);
   if (Array.isArray(base)) {
     if (!Array.isArray(override)) return clone(override);
-    return base.map((item, i) =>
-      i < override.length ? deepMerge(item, override[i]) : clone(item)
-    );
+    // Same length → element-wise merge (translate a label, keep input/next).
+    // Different length → the override is a complete replacement (e.g. a
+    // translated quiz with a different number of questions than English).
+    if (base.length !== override.length) return clone(override);
+    return base.map((item, i) => deepMerge(item, override[i]));
   }
   if (isPlainObject(base)) {
     if (!isPlainObject(override)) return clone(override);

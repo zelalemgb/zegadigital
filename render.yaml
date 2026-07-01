@@ -27,6 +27,10 @@ services:
       - key: DEFAULT_LANG
         value: en
       # ── Secrets — set these in the Render dashboard (Environment tab) ──
+      # Password for the manager dashboard at /admin. Until set, /admin is
+      # disabled (503) so learner data is never exposed by default.
+      - key: ADMIN_TOKEN
+        sync: false
       - key: WHATSAPP_TOKEN
         sync: false
       - key: PHONE_NUMBER_ID

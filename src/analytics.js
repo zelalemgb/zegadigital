@@ -104,6 +104,102 @@ function summary(opts = {}) {
   };
 }
 
+/**
+ * Per-lesson breakdown in curriculum order: how many learners completed each
+ * lesson and how well they did on its knowledge check. The completion column
+ * makes drop-off visible (counts fall as lessons get deeper); low check
+ * accuracy flags lessons that are hard or unclear.
+ */
+function lessonBreakdown() {
+  const content = getContent('en');
+  const doneRows = rows('SELECT lesson_id, COUNT(*) c FROM lesson_progress GROUP BY lesson_id');
+  const doneBy = new Map(doneRows.map((r) => [r.lesson_id, r.c]));
+  const checkRows = rows('SELECT lesson_id, COUNT(*) n, SUM(correct) c FROM check_results GROUP BY lesson_id');
+  const checkBy = new Map(checkRows.map((r) => [r.lesson_id, r]));
+
+  const out = [];
+  for (const track of ['youth', 'adult']) {
+    for (const m of curriculum.modulesForTrack(content, track)) {
+      for (const lessonId of m.lessonIds) {
+        const node = content.nodes[lessonId];
+        const chk = checkBy.get(lessonId);
+        out.push({
+          lessonId,
+          track,
+          module: m.label,
+          title: (node && node.title) || lessonId,
+          completed: doneBy.get(lessonId) || 0,
+          checkAnswered: chk ? chk.n : 0,
+          checkAccuracy: chk && chk.n ? Math.round((chk.c / chk.n) * 100) : null,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * One row per learner for the roster table. Phone numbers are masked to the
+ * last 4 digits — enough to distinguish learners without exposing full PII in
+ * the manager view.
+ */
+function learners() {
+  const content = getContent('en');
+  const trackTotals = {
+    youth: curriculum.allLessonIds(content, 'youth').length,
+    adult: curriculum.allLessonIds(content, 'adult').length,
+  };
+  const doneBy = new Map(
+    rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id').map((r) => [r.user_id, r.c])
+  );
+  // quiz pass counts per user
+  const quizBy = new Map();
+  for (const r of rows("SELECT user_id, data FROM events WHERE type = 'quizFinished'")) {
+    const q = safe(r.data);
+    const e = quizBy.get(r.user_id) || { attempts: 0, passes: 0 };
+    e.attempts += 1;
+    if (q && q.passed) e.passes += 1;
+    quizBy.set(r.user_id, e);
+  }
+  // baseline / endline per user
+  const asmtBy = new Map();
+  for (const a of rows('SELECT user_id, kind, score, total FROM assessments ORDER BY id')) {
+    const e = asmtBy.get(a.user_id) || {};
+    if (a.kind === 'baseline' && e.baseline == null) e.baseline = pct(a);
+    if (a.kind === 'endline') e.endline = pct(a);
+    asmtBy.set(a.user_id, e);
+  }
+
+  return rows('SELECT * FROM profiles').map((p) => {
+    const done = doneBy.get(p.user_id) || 0;
+    const total = p.track ? trackTotals[p.track] || 0 : 0;
+    const quiz = quizBy.get(p.user_id);
+    const asmt = asmtBy.get(p.user_id) || {};
+    return {
+      id: maskId(p.user_id),
+      lang: p.lang || 'en',
+      track: p.track || null,
+      lessonsDone: done,
+      lessonsTotal: total,
+      pct: total ? Math.round((done / total) * 100) : 0,
+      xp: p.xp || 0,
+      level: levelInfo(p.xp || 0).name,
+      streak: p.streak || 0,
+      optInReminders: Boolean(p.opt_in_reminders),
+      lastActive: p.last_active_day || null,
+      quizPasses: quiz ? quiz.passes : 0,
+      quizAttempts: quiz ? quiz.attempts : 0,
+      baselinePct: asmt.baseline != null ? Math.round(asmt.baseline) : null,
+      endlinePct: asmt.endline != null ? Math.round(asmt.endline) : null,
+    };
+  }).sort((a, b) => (b.lastActive || '').localeCompare(a.lastActive || ''));
+}
+
+function maskId(id) {
+  const s = String(id);
+  return s.length <= 4 ? s : '…' + s.slice(-4);
+}
+
 function learningGain() {
   const all = rows('SELECT user_id, kind, score, total, id FROM assessments ORDER BY id');
   const byUser = new Map();
@@ -157,4 +253,4 @@ function safe(s) {
   try { return JSON.parse(s); } catch { return null; }
 }
 
-module.exports = { summary, learningGain };
+module.exports = { summary, learningGain, lessonBreakdown, learners };

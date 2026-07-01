@@ -76,3 +76,29 @@ test('skipping the baseline records no assessment for that user', () => {
   const a = analytics.summary({ today: DAY });
   assert.equal(a.learningGain.baselineTaken, 1); // only learner-1
 });
+
+test('lessonBreakdown reports completions and check accuracy per lesson', () => {
+  const rows = analytics.lessonBreakdown();
+  assert.ok(rows.length >= 35, 'covers the whole curriculum');
+  const intro = rows.find((r) => r.lessonId === 'youth.foundations.privacy-intro');
+  assert.ok(intro, 'first lesson present');
+  assert.equal(intro.track, 'youth');
+  assert.ok(intro.completed >= 1, 'learner-1 completed it');
+  assert.equal(intro.checkAccuracy, 100, 'learner-1 answered its check correctly');
+  // Rows are in curriculum order: youth track comes before adult.
+  assert.equal(rows[0].track, 'youth');
+  assert.ok(rows.some((r) => r.track === 'adult'));
+});
+
+test('learners returns masked, per-user progress rows', () => {
+  const rows = analytics.learners();
+  assert.ok(rows.length >= 2);
+  const l1 = rows.find((r) => r.id === '…er-1'); // last 4 of 'learner-1'
+  assert.ok(l1, 'learner-1 present (masked)');
+  assert.equal(l1.track, 'youth');
+  assert.ok(l1.lessonsDone >= 1);
+  assert.equal(l1.baselinePct, 0);
+  assert.equal(l1.endlinePct, 100);
+  // Masking never leaks a full phone number.
+  for (const r of rows) assert.ok(!/^\d{5,}$/.test(r.id), 'ids are masked');
+});

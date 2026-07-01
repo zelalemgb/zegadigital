@@ -6,6 +6,8 @@
  *   GET  /webhook  → verification handshake (Meta calls this once)
  *   POST /webhook  → inbound messages; we run the runtime and reply
  *   GET  /health   → liveness probe
+ *   GET  /admin    → manager analytics dashboard (HTTP Basic, ADMIN_TOKEN)
+ *   GET  /admin/api→ dashboard data as JSON (same auth)
  *   GET  /img/*    → lesson illustrations (so MEDIA_BASE_URL can point here)
  *
  * Inbound POSTs are authenticated with the X-Hub-Signature-256 header when
@@ -19,6 +21,7 @@ const express = require('express');
 const config = require('./config');
 const runtime = require('./runtime');
 const wa = require('./whatsapp/cloudApi');
+const analytics = require('./analytics');
 const { startScheduler } = require('./scheduler/runner');
 
 const app = express();
@@ -30,6 +33,42 @@ app.use('/img', express.static(path.join(__dirname, '..', 'public', 'img')));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, whatsappConfigured: config.whatsapp.isConfigured });
+});
+
+// ── Manager dashboard (protected) ─────────────────────────────────────────
+// Fails closed: with no ADMIN_TOKEN set the dashboard is disabled, so we never
+// expose learner data by accident. Auth is HTTP Basic — any username, password
+// must equal ADMIN_TOKEN — which the browser handles with a native prompt.
+function requireAdmin(req, res, next) {
+  if (!config.adminToken) {
+    return res.status(503).send('Dashboard disabled: set ADMIN_TOKEN to enable.');
+  }
+  const header = req.get('authorization') || '';
+  const [scheme, encoded] = header.split(' ');
+  if (scheme === 'Basic' && encoded) {
+    const pass = Buffer.from(encoded, 'base64').toString().split(':').slice(1).join(':');
+    const a = Buffer.from(pass);
+    const b = Buffer.from(config.adminToken);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) return next();
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Zega Dashboard"').status(401).send('Authentication required.');
+}
+
+app.get('/admin', requireAdmin, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+});
+
+app.get('/admin/api', requireAdmin, (_req, res) => {
+  try {
+    res.json({
+      summary: analytics.summary(),
+      lessons: analytics.lessonBreakdown(),
+      learners: analytics.learners(),
+    });
+  } catch (err) {
+    console.error('Dashboard data error:', err);
+    res.status(500).json({ error: 'Failed to compute analytics.' });
+  }
 });
 
 // ── Webhook verification (GET) ────────────────────────────────────────────

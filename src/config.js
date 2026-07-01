@@ -6,6 +6,9 @@ const config = {
   port: parseInt(process.env.PORT, 10) || 3000,
   defaultLang: process.env.DEFAULT_LANG || 'en',
 
+  // Password for the manager dashboard at /admin (HTTP Basic). Unset = disabled.
+  adminToken: process.env.ADMIN_TOKEN || '',
+
   whatsapp: {
     token: process.env.WHATSAPP_TOKEN || '',
     phoneNumberId: process.env.PHONE_NUMBER_ID || '',

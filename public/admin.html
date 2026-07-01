@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Zega Digital — Program Dashboard</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --ink: #1a1d29; --muted: #6b7280;
+    --line: #e6e8ec; --brand: #4338ca; --brand-soft: #eef2ff;
+    --good: #16a34a; --warn: #d97706; --bad: #dc2626; --track: #eef0f4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header {
+    background: var(--card); border-bottom: 1px solid var(--line);
+    padding: 18px 24px; display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  button {
+    font: inherit; border: 1px solid var(--line); background: var(--card);
+    color: var(--ink); padding: 8px 14px; border-radius: 8px; cursor: pointer;
+  }
+  button:hover { background: #fafbfc; }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .grid { display: grid; gap: 16px; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); margin-bottom: 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi .value { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; margin-top: 4px; }
+  .kpi .foot { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  section { margin-bottom: 24px; }
+  section > h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); margin: 0 0 12px; }
+  .two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 800px) { .two { grid-template-columns: 1fr; } }
+  .row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 14px; }
+  .row .name { width: 150px; flex: none; color: var(--ink); }
+  .row .num { width: 46px; flex: none; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { flex: 1; height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--brand); border-radius: 6px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 90px; }
+  .spark > div { flex: 1; background: var(--brand-soft); border-radius: 3px 3px 0 0; position: relative; min-height: 2px; }
+  .spark > div > span { background: var(--brand); display: block; width: 100%; height: 100%; border-radius: 3px 3px 0 0; }
+  .spark-labels { display: flex; gap: 3px; margin-top: 6px; }
+  .spark-labels > div { flex: 1; text-align: center; font-size: 10px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em;
+    position: sticky; top: 0; background: var(--card); cursor: pointer; user-select: none; }
+  th:hover { color: var(--ink); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .scroll { max-height: 460px; overflow: auto; border-radius: 12px; }
+  .minibar { display: inline-flex; align-items: center; gap: 7px; }
+  .minibar .bar { width: 80px; height: 8px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill.youth { background: #e0f2fe; color: #0369a1; }
+  .pill.adult { background: #f3e8ff; color: #7e22ce; }
+  .pill.lang { background: #f1f5f9; color: #475569; }
+  .acc-good { color: var(--good); font-weight: 600; }
+  .acc-warn { color: var(--warn); font-weight: 600; }
+  .acc-bad  { color: var(--bad);  font-weight: 600; }
+  .gain-pos { color: var(--good); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .empty { text-align: center; color: var(--muted); padding: 40px; }
+  .err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 14px 18px; border-radius: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Zega Digital <span class="muted">· Program Dashboard</span></h1>
+    <div class="sub" id="asof">Loading…</div>
+  </div>
+  <div class="spacer"></div>
+  <button id="refresh">↻ Refresh</button>
+</header>
+<main id="app"><div class="empty">Loading analytics…</div></main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const pct = (n) => (n == null ? "—" : n + "%");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function bar(value, max, cls = "") {
+  const w = max > 0 ? Math.round((value / max) * 100) : 0;
+  return `<div class="bar ${cls}"><span style="width:${w}%"></span></div>`;
+}
+function accClass(a) { return a == null ? "muted" : a >= 80 ? "acc-good" : a >= 60 ? "acc-warn" : "acc-bad"; }
+
+function kpi(label, value, foot = "") {
+  return `<div class="card kpi"><div class="label">${label}</div><div class="value">${value}</div>${foot ? `<div class="foot">${foot}</div>` : ""}</div>`;
+}
+
+function render(data) {
+  const s = data.summary, lessons = data.lessons, learners = data.learners;
+  const app = $("#app");
+  $("#asof").textContent = "As of " + s.generatedFor + " · " + s.reach.users + " learners";
+
+  // Language split (derived from roster)
+  const langCount = {};
+  for (const l of learners) langCount[l.lang] = (langCount[l.lang] || 0) + 1;
+
+  const funnelMax = s.funnel[0].count || 1;
+  const dayMax = Math.max(1, ...s.retention.activityByDay.map((d) => d.u));
+  const levelMax = Math.max(1, ...s.xp.byLevel.map((l) => l.count));
+  const g = s.learningGain;
+
+  app.innerHTML = `
+    <div class="grid kpis">
+      ${kpi("Learners", s.reach.users, s.reach.pickedTrack + " picked a track")}
+      ${kpi("Active today", s.reach.activeToday, s.reach.distinctActive + " ever active")}
+      ${kpi("Lessons done", learners.reduce((n, l) => n + l.lessonsDone, 0), s.reach.startedLesson + " started ≥1")}
+      ${kpi("Track completions", s.reach.completedTrack, "finished a full track")}
+      ${kpi("Quiz pass rate", pct(s.quizzes.passRate), s.quizzes.attempts + " attempts")}
+      ${kpi("Avg learning gain", g.avgGainPoints == null ? "—" : "+" + g.avgGainPoints + " pts", g.bothTaken + " took both tests")}
+    </div>
+
+    <section class="grid two">
+      <div class="card">
+        <h2>Engagement funnel</h2>
+        ${s.funnel.map((f) => `
+          <div class="row"><div class="name">${esc(f.stage)}</div>${bar(f.count, funnelMax)}<div class="num">${f.count}</div></div>
+        `).join("")}
+      </div>
+      <div class="card">
+        <h2>Active learners · last 14 days</h2>
+        <div class="spark">
+          ${s.retention.activityByDay.map((d) => `<div title="${d.d}: ${d.u} active, ${d.n} events"><span style="height:${Math.round((d.u / dayMax) * 100)}%"></span></div>`).join("")}
+        </div>
+        <div class="spark-labels">
+          ${s.retention.activityByDay.map((d, i) => `<div>${i % 2 === 0 ? d.d.slice(5) : ""}</div>`).join("")}
+        </div>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <h2>Skill levels</h2>
+        ${s.xp.byLevel.map((l) => `<div class="row"><div class="name">${esc(l.name)}</div>${bar(l.count, levelMax)}<div class="num">${l.count}</div></div>`).join("")}
+      </div>
+      <div class="card">
+        <h2>Streaks &amp; reminders</h2>
+        <div class="row"><div class="name">Avg streak</div><div class="num" style="width:auto">${s.streaks.avg} days</div></div>
+        <div class="row"><div class="name">Longest streak</div><div class="num" style="width:auto">${s.streaks.max} days</div></div>
+        <div class="row"><div class="name">Opted into reminders</div><div class="num" style="width:auto">${s.reminders.optedIn}</div></div>
+        <div class="row"><div class="name">Nudges sent</div><div class="num" style="width:auto">${s.reminders.nudgesSent}</div></div>
+        <div class="row"><div class="name">Check accuracy</div><div class="num" style="width:auto">${pct(s.checks.accuracy)} <span class="muted">(${s.checks.answered})</span></div></div>
+        <div class="row"><div class="name">Language split</div><div class="num" style="width:auto">${Object.entries(langCount).map(([k, v]) => `${k.toUpperCase()} ${v}`).join(" · ") || "—"}</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Lesson performance <span class="muted" style="text-transform:none;font-weight:400">— completions show drop-off; low check accuracy flags hard lessons</span></h2>
+      <div class="scroll">
+        <table id="lessonTable">
+          <thead><tr>
+            <th data-k="track">Track</th><th data-k="module">Module</th><th data-k="title">Lesson</th>
+            <th class="num" data-k="completed">Completed</th><th class="num" data-k="checkAccuracy">Check acc.</th>
+          </tr></thead>
+          <tbody>
+          ${lessons.map((l) => `
+            <tr>
+              <td><span class="pill ${l.track}">${l.track}</span></td>
+              <td class="muted">${esc(l.module)}</td>
+              <td>${esc(l.title)}</td>
+              <td class="num"><span class="minibar">${bar(l.completed, Math.max(1, ...lessons.map((x) => x.completed)))}<b>${l.completed}</b></span></td>
+              <td class="num ${accClass(l.checkAccuracy)}">${l.checkAccuracy == null ? "—" : l.checkAccuracy + "%"}<span class="muted"> ${l.checkAnswered ? "(" + l.checkAnswered + ")" : ""}</span></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Learners <span class="muted" style="text-transform:none;font-weight:400">— ${learners.length} total, most recently active first</span></h2>
+      <div class="scroll">
+        <table id="learnerTable">
+          <thead><tr>
+            <th data-k="id">Learner</th><th data-k="lang">Lang</th><th data-k="track">Track</th>
+            <th class="num" data-k="pct">Progress</th><th class="num" data-k="xp">XP</th><th data-k="level">Level</th>
+            <th class="num" data-k="streak">Streak</th><th class="num" data-k="quizPasses">Quiz</th>
+            <th class="num" data-k="gain">Baseline→End</th><th data-k="lastActive">Last active</th>
+          </tr></thead>
+          <tbody>
+          ${learners.map((l) => `
+            <tr>
+              <td><code>${esc(l.id)}</code></td>
+              <td><span class="pill lang">${l.lang.toUpperCase()}</span></td>
+              <td>${l.track ? `<span class="pill ${l.track}">${l.track}</span>` : '<span class="muted">—</span>'}</td>
+              <td class="num"><span class="minibar">${bar(l.lessonsDone, l.lessonsTotal || 1)}<b>${l.lessonsDone}/${l.lessonsTotal || "—"}</b></span></td>
+              <td class="num">${l.xp}</td>
+              <td>${esc(l.level)}</td>
+              <td class="num">${l.streak || "—"}</td>
+              <td class="num">${l.quizAttempts ? l.quizPasses + "/" + l.quizAttempts : "—"}</td>
+              <td class="num">${l.baselinePct == null && l.endlinePct == null ? '<span class="muted">—</span>'
+                  : `${l.baselinePct == null ? "—" : l.baselinePct + "%"} → ${l.endlinePct == null ? "—" : l.endlinePct + "%"}${(l.baselinePct != null && l.endlinePct != null) ? ` <span class="gain-pos">(${l.endlinePct - l.baselinePct >= 0 ? "+" : ""}${l.endlinePct - l.baselinePct})</span>` : ""}`}</td>
+              <td class="muted">${l.lastActive || "—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+  if (!learners.length) app.innerHTML += `<div class="empty">No learners yet. Data appears here as people use the bot.</div>`;
+  wireSort("lessonTable", lessons);
+  wireSort("learnerTable", learners);
+}
+
+// Click a column header to sort that table (numeric desc / text asc).
+function wireSort(tableId, dataRef) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.querySelectorAll("th[data-k]").forEach((th) => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.k;
+      const tbody = table.querySelector("tbody");
+      const rows = [...tbody.rows];
+      const asc = th._asc = !th._asc;
+      const val = (tr) => {
+        const cell = tr.querySelector(`td:nth-child(${th.cellIndex + 1})`);
+        const t = cell ? cell.textContent.trim() : "";
+        const n = parseFloat(t.replace(/[^0-9.\-]/g, ""));
+        return isNaN(n) || /[a-z]/i.test(t.replace(/pts|days/gi, "")) && !/^\d/.test(t) ? t.toLowerCase() : n;
+      };
+      rows.sort((a, b) => {
+        const va = val(a), vb = val(b);
+        if (typeof va === "number" && typeof vb === "number") return asc ? va - vb : vb - va;
+        return asc ? String(va).localeCompare(vb) : String(vb).localeCompare(va);
+      });
+      rows.forEach((r) => tbody.appendChild(r));
+    });
+  });
+}
+
+async function load() {
+  const app = $("#app");
+  try {
+    // Build the URL from origin (never includes userinfo) so the request works
+    // even if the page was opened with credentials embedded in the address bar.
+    const res = await fetch(location.origin + "/admin/api", { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    render(await res.json());
+  } catch (e) {
+    app.innerHTML = `<div class="err">Could not load analytics: ${esc(e.message)}. Try refreshing.</div>`;
+  }
+}
+$("#refresh").addEventListener("click", load);
+load();
+</script>
+</body>
+</html>

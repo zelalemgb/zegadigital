@@ -21,13 +21,13 @@ const AWARDS = {
   assessment: 25, // completing a baseline or endline assessment
 };
 
-// Cumulative XP thresholds. Each level carries an identity name.
+// Cumulative point thresholds. Each level has a plain, easy-to-read name.
 const LEVELS = [
-  { name: 'Curious', floor: 0 },
-  { name: 'Aware', floor: 100 },
+  { name: 'Beginner', floor: 0 },
+  { name: 'Learner', floor: 100 },
   { name: 'Skilled', floor: 300 },
   { name: 'Guardian', floor: 700 },
-  { name: 'Digital Citizen', floor: 1500 },
+  { name: 'Expert', floor: 1500 },
 ];
 
 function levelInfo(xp) {

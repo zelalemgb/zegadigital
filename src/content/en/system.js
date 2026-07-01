@@ -19,43 +19,39 @@ module.exports = {
   strings: {
     // Shown to a brand-new user (or on "Hi"/"Start"). Also where language is chosen.
     onboarding: [
-      '👋 Welcome to Zega Digital ዜጋ ዲጂታል!',
-      "💡 I'm here to help you build essential digital literacy skills — from staying safe online to understanding social media to positive online experiences!",
+      'Welcome to Zega Digital ዜጋ ዲጂታል 👋',
       '',
-      'You can reply with a number at any time to navigate.',
-      'Type MENU to return to the main menu. Type STOP to exit.',
+      'I help you build everyday digital skills — staying safe online, using social media wisely, and getting the most from the internet.',
       '',
-      "Let's start — please choose your language:",
-      '1️⃣ English',
-      '2️⃣ Amharic',
-      '3️⃣ Afaan Oromo',
+      'First, choose your language:',
+      '1  English',
+      '2  Amharic',
+      '3  Afaan Oromo',
     ].join('\n'),
 
     // Quick navigation tip, shown right after a language is chosen.
     navTip: [
-      '🧭 Quick tip before we start:',
+      'A few quick tips:',
       '',
-      '✅ Reply with a NUMBER to choose a menu option.',
-      '0️⃣ Reply 0 to go back one level.',
-      '📋 Type MENU anytime for the Main Menu.',
-      '❌ Type STOP to exit.',
+      '• Reply with a number to choose an option.',
+      '• Reply 0 to go back one step.',
+      '• Type MENU anytime for the home screen.',
+      '• Type STOP to exit.',
       '',
-      "Ready? Let's go! 🚀",
+      "Let's begin!",
     ].join('\n'),
 
     // Shown when input does not match anything valid in the current state.
     unrecognised: [
-      "🤔 Hmm, I didn't quite get that!",
+      "Sorry, I didn't understand that.",
       '',
-      'Try replying with a number from the menu.',
-      'Type MENU to see all options, or HELP for support.',
+      'Please reply with a number from the list above, or type MENU for the home screen.',
     ].join('\n'),
 
     exitMessage: [
-      '👋 Thank you for using Zega Digital ዜጋ ዲጂታል!',
-      'We hope you learned something new to help you navigate the digital world safely and confidently.',
-      "You can start a new session anytime by sending 'Hi' or 'Menu'.",
-      'Stay safe online! 🌍✨',
+      'Thanks for using Zega Digital ዜጋ ዲጂታል.',
+      'We hope you learned something useful today.',
+      'Send Hi anytime to start again. Stay safe online!',
     ].join('\n'),
 
     // Footer appended to every menu unless the menu defines its own.
@@ -63,15 +59,15 @@ module.exports = {
 
     // Completion badge — {{lesson}} is replaced with the lesson title.
     completionBadge: [
-      "🏅 Great work! You've completed {{lesson}}.",
+      'Lesson complete: {{lesson}}. Nice work!',
       '',
-      '1️⃣ Continue to the next lesson',
-      '0️⃣ Return to the module menu',
-      'Type MENU for the Main Menu',
+      '1  Next lesson',
+      '0  Back to topics',
+      'MENU  Home',
     ].join('\n'),
 
     // Navigation footer appended to each lesson message page.
-    lessonNav: 'Reply NEXT ➡️ to continue · 0️⃣ back · MENU for Main Menu',
+    lessonNav: 'Reply NEXT to continue, 0 to go back, or MENU for home',
   },
 
   nodes: {

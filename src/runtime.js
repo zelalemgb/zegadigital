@@ -26,8 +26,6 @@ const { AWARDS, LEVELS, levelInfo } = require('./gamification/xp');
 const nudges = require('./scheduler/nudges');
 const { getContent } = require('./content');
 
-const MEDALS = ['🌱', '🔰', '🥈', '🛡️', '🎓'];
-
 function todayStr(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -155,7 +153,7 @@ function processMessage(userId, input, opts = {}) {
   if (completedThisTurn && !profile.optInReminders && !profile.remindersPrompted) {
     profile.remindersPrompted = true;
     optInPrompt =
-      '🔔 Want a daily nudge to keep your streak going? Reply REMIND ON (or e.g. REMIND 19 for a 7pm reminder).';
+      'Want a daily reminder to keep your streak going? Reply REMIND ON (or REMIND 19 for a 7pm reminder).';
   }
 
   // Finalise level + persist.
@@ -169,19 +167,19 @@ function processMessage(userId, input, opts = {}) {
   // Build the outgoing bubbles: [daily greeting] + engine output + [rewards].
   const prepend = [];
   if (activity.newDay && !firstEver && session.started && !session.awaitingLanguage) {
-    let line = `🔥 Day ${profile.streak} streak — welcome back! +${AWARDS.dailyCheckIn} XP`;
-    if (activity.milestone) line = `🎉 ${activity.milestone}-day streak — amazing! +${AWARDS.dailyCheckIn} XP`;
-    else if (activity.froze) line += ' (we kept your streak alive 💙)';
+    let line = `You're on a ${profile.streak}-day streak. +${AWARDS.dailyCheckIn} points for showing up today.`;
+    if (activity.milestone) line = `${activity.milestone} days in a row — amazing! +${AWARDS.dailyCheckIn} points.`;
+    else if (activity.froze) line += ' (we saved your streak)';
     prepend.push(line);
   }
 
   const rewards = [];
-  if (xpVisible > 0) rewards.push(`⭐ +${xpVisible} XP earned`);
+  if (xpVisible > 0) rewards.push(`You earned ${xpVisible} points.`);
   for (const b of newBadges) {
-    rewards.push(`🏅 Badge unlocked: ${b.emoji} ${b.name} — ${b.desc}! (+${AWARDS.badge} XP)`);
+    rewards.push(`New badge: ${b.name} — ${b.desc}. +${AWARDS.badge} points.`);
   }
   if (endLevel > startLevel) {
-    rewards.push(`🎉 Level up! You're now ${MEDALS[endLevel]} ${LEVELS[endLevel].name}.`);
+    rewards.push(`You reached a new level: ${LEVELS[endLevel].name} (level ${endLevel + 1} of ${LEVELS.length}).`);
   }
   // Learning gain: compare this endline against the earliest baseline.
   if (gainEvent) {
@@ -190,10 +188,9 @@ function processMessage(userId, input, opts = {}) {
       const before = Math.round((baseline.score / baseline.total) * 100);
       const after = Math.round((gainEvent.score / gainEvent.total) * 100);
       const delta = after - before;
-      const arrow = delta > 0 ? '📈' : delta < 0 ? '📉' : '➡️';
       rewards.push(
-        `${arrow} Learning gain: ${before}% → ${after}% (${delta >= 0 ? '+' : ''}${delta} points) since your baseline.` +
-          (delta > 0 ? " Brilliant progress! 🌟" : '')
+        `Your score went from ${before}% at the start to ${after}% now` +
+          (delta > 0 ? ` — that's ${delta} points of progress. Well done!` : '.')
       );
     }
   }

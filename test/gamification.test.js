@@ -34,7 +34,7 @@ test('completing a lesson awards XP, persists progress, and unlocks First Steps'
 
   assert.ok(done.profile.xp >= 100, `expected substantial XP, got ${done.profile.xp}`);
   assert.ok(done.profile.badges >= 1, 'should have earned at least one badge');
-  assert.match(joined(done), /Badge unlocked/);
+  assert.match(joined(done), /New badge/);
   assert.match(joined(done), /First Steps/);
 });
 
@@ -52,7 +52,7 @@ test('XP and progress persist across a fresh conversation (restart)', () => {
   const resumed = runtime.startConversation(uid, { today: day });
   assert.equal(resumed.profile.xp, before);
   assert.equal(resumed.profile.track, 'youth');
-  assert.match(joined(resumed), /Today's mission/);
+  assert.match(joined(resumed), /Today's lesson/);
 });
 
 test('daily streak grows across days and unlocks a streak badge', () => {
@@ -84,8 +84,8 @@ test('the engine surfaces context-aware action buttons', () => {
 });
 
 test('levelInfo maps XP to the right identity tier', () => {
-  assert.equal(levelInfo(0).name, 'Curious');
-  assert.equal(levelInfo(150).name, 'Aware');
-  assert.equal(levelInfo(1600).name, 'Digital Citizen');
+  assert.equal(levelInfo(0).name, 'Beginner');
+  assert.equal(levelInfo(150).name, 'Learner');
+  assert.equal(levelInfo(1600).name, 'Expert');
   assert.equal(levelInfo(1600).isMax, true);
 });

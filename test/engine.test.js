@@ -17,7 +17,7 @@ const joined = (r) => r.messages.map((m) => (typeof m === 'string' ? m : m.text 
 test('first contact shows onboarding with language choices', () => {
   const r = run(['Hi']);
   assert.match(joined(r), /Welcome to Zega Digital/);
-  assert.match(joined(r), /1️⃣ English/);
+  assert.match(joined(r), /English/);
   assert.ok(r.session.awaitingLanguage);
 });
 
@@ -35,8 +35,9 @@ const READY = { baselineDone: true };
 test('selecting a track shows the mission with the next lesson', () => {
   const r = run(['Hi', '1', '1'], READY); // English, Youth
   assert.equal(r.session.track, 'youth');
-  assert.match(joined(r), /Today's mission/);
-  assert.match(joined(r), /Up next/);
+  assert.match(joined(r), /Today's lesson/);
+  assert.match(joined(r), /Introduction to Privacy/);
+  assert.match(joined(r), /Your learning so far/);
   // The track-selected event is emitted for the runtime to persist.
   assert.ok(run(['Hi', '1', '1'], READY).events.some((e) => e.type === 'trackSelected'));
 });
@@ -91,7 +92,7 @@ test('MENU returns home; STOP exits but remembers the track', () => {
   const menu = run(['Hi', '1', '1', '1', 'MENU']);
   assert.equal(menu.session.cursor.type, 'home');
   const stop = run(['Hi', '1', '1', 'STOP']);
-  assert.match(joined(stop), /Thank you for using/);
+  assert.match(joined(stop), /Thanks for using/);
   assert.equal(stop.session.started, false);
   assert.equal(stop.session.track, 'youth'); // remembered
 });

@@ -40,7 +40,7 @@ function fullJourney(uid) {
 
 test('endline reports a learning gain vs baseline', () => {
   const last = fullJourney('learner-1');
-  assert.match(joined(last), /Learning gain: 0% → 100%/);
+  assert.match(joined(last), /0% at the start to 100% now/);
 });
 
 test('analytics.summary reflects the funnel, gain, checks and reach', () => {

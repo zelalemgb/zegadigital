@@ -69,6 +69,82 @@ module.exports = {
 
     // Navigation footer appended to each lesson message page.
     lessonNav: 'Reply NEXT to continue, 0 to go back, or MENU for home',
+
+    // Dynamic-screen strings (mission, progress, quiz, rewards). {{...}} are
+    // filled at render time. Translated per language; English is the fallback.
+    ui: {
+      // Level names by index (Beginner..Expert), shown on mission/progress.
+      levelNames: ['Beginner', 'Learner', 'Skilled', 'Guardian', 'Expert'],
+      // Track chooser (shown before a track is picked)
+      chooseWelcome: 'Welcome to Zega Digital 👋',
+      choosePrompt: 'Who is this for? Pick one — you can change it anytime.',
+      chooseYouth: '1  Youth (ages 13–17)',
+      chooseAdult: '2  Adult (18+)',
+      chooseExplore: '3  Just exploring',
+      // Mission (home) screen
+      welcomeBack: 'Welcome back 👋',
+      todaysLesson: "*Today's lesson*",
+      lessonLine: '{{title}} ({{module}}, ~2 min)',
+      trackDone: "You've finished this track. Well done!",
+      replyNumber: '*Reply with a number:*',
+      optStartLesson: "1  Start today's lesson",
+      optStartQuiz: '1  Take the track quiz',
+      optProgress: '2  My progress & badges',
+      optBrowse: '3  Browse all topics',
+      optQuiz: '4  Take a quiz',
+      optLanguage: '5  Change language',
+      optMore: '6  More (glossary, help, about)',
+      statLine: 'Level: {{level}} · {{points}} points · {{streak}} · {{done}}/{{total}} lessons',
+      streakDays: '{{n}}-day streak',
+      streakNone: 'no streak yet',
+      // Progress screen
+      progTitle: '*Your progress*',
+      progLevel: 'Level: {{level}} ({{index}} of {{count}})',
+      progTop: 'You have reached the top level!',
+      progToNext: '{{n}} more points to reach {{next}}',
+      progPoints: 'Points: {{points}}',
+      progStreak: 'Day streak: {{n}} days in a row (your best: {{best}})',
+      progLessons: '*Lessons: {{done}} of {{total}} finished*',
+      progModFinished: 'finished',
+      progModNotStarted: 'not started',
+      progModPartial: '{{done}} of {{total}}',
+      progBadgesTitle: '*Badges earned*',
+      progNoBadges: '*Badges:* none yet — finish a lesson to earn your first.',
+      progFooter: 'Reply 0 or MENU to go back home.',
+      // Post-lesson check
+      checkTitle: '*Quick check* — worth 10 points',
+      checkFooter: 'Reply with a letter, or SKIP.',
+      checkCorrect: 'Correct! {{reinforce}}',
+      checkWrong: 'Not quite — the answer is {{answer}}. {{reinforce}}',
+      // Quiz
+      quizQ: '*Question {{n}} of {{total}}*',
+      quizFooter: 'Reply A, B, C, or D. SKIP to skip, MENU to exit.',
+      quizCorrect: 'Correct — the answer is {{answer}}.',
+      quizWrong: 'Not quite — the correct answer is {{answer}}.',
+      quizContinue: 'Reply YES for the next question, or MENU to return.',
+      quizNext: 'Reply YES for the next question, or MENU to stop.',
+      quizDoneTitle: '*Quiz complete!*',
+      quizScore: 'You answered {{score}} out of {{total}} correctly.',
+      quizDoneFooter: 'Reply MENU for home, or REVIEW to revisit topics.',
+      // Info pages footer
+      infoFooter: 'Reply 0 to go back, or MENU for home.',
+      glossaryMore: 'Reply another number for a definition, or 0 to go back.',
+      // Language menu
+      langTitle: '🌐 Language',
+      langPrompt: 'Choose your language:',
+      langBack: '0  Back',
+      langSet: 'Language set to {{name}}.',
+      // Rewards (runtime)
+      rewardStreak: "You're on a {{n}}-day streak. +{{pts}} points for showing up today.",
+      rewardStreakMilestone: '{{n}} days in a row — amazing! +{{pts}} points.',
+      rewardStreakSaved: ' (we saved your streak)',
+      rewardPoints: 'You earned {{pts}} points.',
+      rewardBadge: 'New badge: {{name}} — {{desc}}. +{{pts}} points.',
+      rewardLevelUp: 'You reached a new level: {{name}} (level {{n}} of {{count}}).',
+      rewardGain: 'Your score went from {{before}}% at the start to {{after}}% now',
+      rewardGainProgress: " — that's {{delta}} points of progress. Well done!",
+      optInPrompt: 'Want a daily reminder to keep your streak going? Reply REMIND ON (or REMIND 19 for a 7pm reminder).',
+    },
   },
 
   nodes: {

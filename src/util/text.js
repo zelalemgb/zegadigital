@@ -27,4 +27,11 @@ function stripEmoji(text) {
     .trim();
 }
 
-module.exports = { stripEmoji };
+// Fill {{placeholders}} in a template string from a vars object.
+function fill(str, vars = {}) {
+  return String(str == null ? '' : str).replace(/\{\{(\w+)\}\}/g, (_, k) =>
+    vars[k] == null ? '' : String(vars[k])
+  );
+}
+
+module.exports = { stripEmoji, fill };

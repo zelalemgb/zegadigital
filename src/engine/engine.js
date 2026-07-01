@@ -21,7 +21,7 @@ const { getContent, LANGUAGE_CHOICES } = require('../content');
 const config = require('../config');
 const curriculum = require('../curriculum');
 const { levelInfo, LEVELS } = require('../gamification/xp');
-const { stripEmoji } = require('../util/text');
+const { stripEmoji, fill } = require('../util/text');
 
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
@@ -314,25 +314,26 @@ function afterLesson(session, content, lessonId) {
   const check = content.checks && content.checks[lessonId];
   if (check) {
     session.cursor = { type: 'check', lessonId };
-    return out(session, [renderCheck(check)]);
+    return out(session, [renderCheck(content, check)]);
   }
   return showCompletion(session, content, lessonId);
 }
 
 function handleCheck(session, content, cur, cmd) {
+  const u = content.strings.ui;
   const check = content.checks[cur.lessonId];
   const keys = Object.keys(check.options);
   if (cmd === 'SKIP') {
     return showCompletion(session, content, cur.lessonId);
   }
   if (!keys.includes(cmd)) {
-    return out(session, [content.strings.unrecognised, renderCheck(check)]);
+    return out(session, [content.strings.unrecognised, renderCheck(content, check)]);
   }
   const correct = cmd === check.answer;
   emit('checkAnswered', { lessonId: cur.lessonId, correct });
   const head = correct
-    ? `Correct! ${check.reinforce}`
-    : `Not quite — the answer is ${check.answer}. ${check.reinforce}`;
+    ? fill(u.checkCorrect, { reinforce: check.reinforce })
+    : fill(u.checkWrong, { answer: check.answer, reinforce: check.reinforce });
   return showCompletion(session, content, cur.lessonId, [head]);
 }
 
@@ -356,7 +357,7 @@ function handleCompletion(session, content, cur, text) {
 function handleInfo(session, content, cur, text) {
   const node = content.nodes[cur.id];
   if (text === '0') return goTo(session, content, (node && node.back) || 'HOME');
-  return out(session, [...node.messages, infoFooter()]);
+  return out(session, [...node.messages, infoFooter(content)]);
 }
 
 // ── Glossary ─────────────────────────────────────────────────────────────────
@@ -365,29 +366,28 @@ function handleGlossary(session, content, text) {
   if (text === '0') return goTo(session, content, g.back || 'HOME');
   const term = g.terms.find((t) => t.input === text);
   if (!term) return out(session, [content.strings.unrecognised, renderGlossary(g)]);
-  return out(session, [
-    `*${term.label}*\n${term.definition}\n\nReply another number for a definition, or 0 to go back.`,
-  ]);
+  return out(session, [`*${term.label}*\n${term.definition}\n\n${content.strings.ui.glossaryMore}`]);
 }
 
 // ── Language ─────────────────────────────────────────────────────────────────
 function handleLanguageMenu(session, content, text) {
   if (text === '0') return goTo(session, content, 'HOME');
   const choice = LANGUAGE_CHOICES.find((c) => c.input === text);
-  if (!choice) return out(session, [content.strings.unrecognised, renderLanguageMenu()]);
+  if (!choice) return out(session, [content.strings.unrecognised, renderLanguageMenu(content)]);
   session.lang = choice.code;
   const c = getContent(session.lang);
-  return goTo(session, c, 'HOME', [`Language set to ${choice.name}.`]);
+  return goTo(session, c, 'HOME', [fill(c.strings.ui.langSet, { name: choice.name })]);
 }
 
 // ── Quiz ─────────────────────────────────────────────────────────────────────
 function startQuiz(session, content, track) {
   const quiz = content.quizzes[track];
   session.cursor = { type: 'quiz', track, index: 0, score: 0, phase: 'question' };
-  return out(session, [quiz.intro, renderQuestion(quiz, 0)]);
+  return out(session, [quiz.intro, renderQuestion(content, quiz, 0)]);
 }
 
 function handleQuiz(session, content, cur, text, cmd) {
+  const u = content.strings.ui;
   const quiz = content.quizzes[cur.track];
   const total = quiz.questions.length;
 
@@ -401,19 +401,19 @@ function handleQuiz(session, content, cur, text, cmd) {
         emit('quizCorrect', {});
       }
       const head = correct
-        ? `Correct — the answer is ${question.answer}.`
-        : `Not quite — the correct answer is ${question.answer}.`;
+        ? fill(u.quizCorrect, { answer: question.answer })
+        : fill(u.quizWrong, { answer: question.answer });
       const result = `${head}\n${question.explain}`;
       if (cur.index >= total - 1) return finishQuiz(session, content, cur, quiz, [result]);
       cur.phase = 'continue';
       session.cursor = cur;
-      return out(session, [`${result}\n\nReply YES for the next question, or MENU to stop.`]);
+      return out(session, [`${result}\n\n${u.quizNext}`]);
     }
-    return out(session, [content.strings.unrecognised, renderQuestion(quiz, cur.index)]);
+    return out(session, [content.strings.unrecognised, renderQuestion(content, quiz, cur.index)]);
   }
   // continue
   if (['YES', 'Y', 'NEXT', '1'].includes(cmd)) return advanceQuiz(session, content, cur, quiz, total, []);
-  return out(session, ['Reply YES ➡️ for the next question, or MENU to return.']);
+  return out(session, [u.quizContinue]);
 }
 
 function advanceQuiz(session, content, cur, quiz, total, prefix) {
@@ -421,21 +421,22 @@ function advanceQuiz(session, content, cur, quiz, total, prefix) {
   cur.index += 1;
   cur.phase = 'question';
   session.cursor = cur;
-  return out(session, [...prefix, renderQuestion(quiz, cur.index)]);
+  return out(session, [...prefix, renderQuestion(content, quiz, cur.index)]);
 }
 
 function finishQuiz(session, content, cur, quiz, prefix) {
+  const u = content.strings.ui;
   const total = quiz.questions.length;
   const passed = total > 0 && cur.score / total >= PASS_RATIO;
   emit('quizFinished', { track: cur.track, score: cur.score, total, passed });
   const tier = quiz.tiers.find((t) => cur.score >= t.min);
   const summary = [
-    '*Quiz complete!*',
-    `You answered ${cur.score} out of ${total} correctly.`,
+    u.quizDoneTitle,
+    fill(u.quizScore, { score: cur.score, total }),
     '',
     tier ? tier.badge : '',
     '',
-    'Reply MENU for home, or REVIEW to revisit topics.',
+    u.quizDoneFooter,
   ].join('\n');
   session.cursor = { type: 'menu', id: quiz.returnTo };
   return out(session, [...prefix, summary]);
@@ -456,7 +457,7 @@ function goTo(session, content, target, prefix = []) {
   }
   if (target === 'LANGUAGE') {
     session.cursor = { type: 'language' };
-    return out(session, [...prefix, renderLanguageMenu()]);
+    return out(session, [...prefix, renderLanguageMenu(content)]);
   }
   if (target === 'GLOSSARY') {
     session.cursor = { type: 'glossary' };
@@ -479,83 +480,85 @@ function goTo(session, content, target, prefix = []) {
   }
   if (node.type === 'info') {
     session.cursor = { type: 'info', id: resolvedId };
-    return out(session, [...prefix, ...node.messages, infoFooter()]);
+    return out(session, [...prefix, ...node.messages, infoFooter(content)]);
   }
   session.cursor = { type: 'home' };
   return out(session, [...prefix, renderHome(session, content)]);
 }
 
 // ── Renderers ────────────────────────────────────────────────────────────────
+function lname(content, index) {
+  const names = content.strings.ui.levelNames || [];
+  return names[index] || (LEVELS[index] && LEVELS[index].name) || '';
+}
+
 function renderHome(session, content) {
+  const u = content.strings.ui;
   const p = CTX.profile || {};
   const points = p.xp || 0;
   const li = levelInfo(points);
 
   if (!session.track) {
-    return [
-      'Welcome to Zega Digital 👋',
-      '',
-      'Who is this for? Pick one — you can change it anytime.',
-      '',
-      '1  Youth (ages 13–17)',
-      '2  Adult (18+)',
-      '3  Just exploring',
-    ].join('\n');
+    return [u.chooseWelcome, '', u.choosePrompt, '', u.chooseYouth, u.chooseAdult, u.chooseExplore].join('\n');
   }
 
   const prog = curriculum.trackProgress(content, session.track, CTX.completed);
   const next = curriculum.nextLesson(content, session.track, CTX.completed);
   const streak = p.streak || 0;
-  const streakShort = streak > 0 ? `${streak}-day streak` : 'no streak yet';
+  const streakShort = streak > 0 ? fill(u.streakDays, { n: streak }) : u.streakNone;
 
-  const lines = ['Welcome back 👋', ''];
+  const lines = [u.welcomeBack, ''];
   if (next) {
-    lines.push("*Today's lesson*", `${next.title} (${next.module.label}, ~2 min)`, '');
+    lines.push(u.todaysLesson, fill(u.lessonLine, { title: next.title, module: next.module.label }), '');
   } else {
-    lines.push("*Today's lesson*", "You've finished this track. Well done!", '');
+    lines.push(u.todaysLesson, u.trackDone, '');
   }
   // Options first so they stay visible (WhatsApp truncates long messages).
   lines.push(
-    '*Reply with a number:*',
-    next ? "1  Start today's lesson" : '1  Take the track quiz',
-    '2  My progress & badges',
-    '3  Browse all topics',
-    '4  Take a quiz',
-    '5  Change language',
-    '6  More (glossary, help, about)',
+    u.replyNumber,
+    next ? u.optStartLesson : u.optStartQuiz,
+    u.optProgress,
+    u.optBrowse,
+    u.optQuiz,
+    u.optLanguage,
+    u.optMore,
     '',
-    `Level: ${li.name} · ${points} points · ${streakShort} · ${prog.done}/${prog.total} lessons`
+    fill(u.statLine, { level: lname(content, li.index), points, streak: streakShort, done: prog.done, total: prog.total })
   );
   return lines.join('\n');
 }
 
 function renderProgress(session, content) {
+  const u = content.strings.ui;
   const p = CTX.profile || {};
   const li = levelInfo(p.xp || 0);
   const prog = curriculum.trackProgress(content, session.track, CTX.completed);
   const lines = [
-    '*Your progress*',
+    u.progTitle,
     '',
-    `Level: ${li.name} (${li.index + 1} of ${LEVELS.length})`,
-    li.isMax ? 'You have reached the top level!' : `${li.toNext} more points to reach ${li.nextName}`,
-    `Points: ${p.xp || 0}`,
-    `Day streak: ${p.streak || 0} days in a row (your best: ${p.longestStreak || 0})`,
+    fill(u.progLevel, { level: lname(content, li.index), index: li.index + 1, count: LEVELS.length }),
+    li.isMax ? u.progTop : fill(u.progToNext, { n: li.toNext, next: lname(content, li.index + 1) }),
+    fill(u.progPoints, { points: p.xp || 0 }),
+    fill(u.progStreak, { n: p.streak || 0, best: p.longestStreak || 0 }),
     '',
-    `*Lessons: ${prog.done} of ${prog.total} finished*`,
+    fill(u.progLessons, { done: prog.done, total: prog.total }),
   ];
   for (const m of prog.modules) {
-    const status = m.complete ? 'finished' : m.done > 0 ? `${m.done} of ${m.total}` : 'not started';
+    const status = m.complete
+      ? u.progModFinished
+      : m.done > 0
+        ? fill(u.progModPartial, { done: m.done, total: m.total })
+        : u.progModNotStarted;
     lines.push(`• ${m.label} — ${status}`);
   }
   lines.push('');
   if (CTX.earnedBadges.length) {
-    lines.push('*Badges earned*');
+    lines.push(u.progBadgesTitle);
     lines.push(CTX.earnedBadges.map((b) => b.name).join(', '));
   } else {
-    lines.push('*Badges:* none yet — finish a lesson to earn your first.');
+    lines.push(u.progNoBadges);
   }
-  lines.push('');
-  lines.push('Reply 0 or MENU to go back home.');
+  lines.push('', u.progFooter);
   return lines.join('\n');
 }
 
@@ -585,32 +588,34 @@ function lessonPage(content, node, index) {
   return { text: `${card.text}\n\n${counter} · ${nav}`, image: card.image };
 }
 
-function renderCheck(check) {
+function renderCheck(content, check) {
+  const u = content.strings.ui;
   const opts = Object.keys(check.options)
     .map((k) => `${k}) ${check.options[k]}`)
     .join('\n');
-  return [
-    '*Quick check* — worth 10 points',
-    '',
-    check.q,
-    '',
-    opts,
-    '',
-    'Reply with a letter, or SKIP.',
-  ].join('\n');
+  return [u.checkTitle, '', check.q, '', opts, '', u.checkFooter].join('\n');
 }
 
-function infoFooter() {
-  return 'Reply 0 to go back, or MENU for home.';
+function infoFooter(content) {
+  return content.strings.ui.infoFooter;
 }
 
-function renderQuestion(quiz, index) {
+function renderQuestion(content, quiz, index) {
+  const u = content.strings.ui;
   const q = quiz.questions[index];
   const opts = ['A', 'B', 'C', 'D']
     .filter((k) => q.options[k] != null)
     .map((k) => `${k}) ${q.options[k]}`)
     .join('\n');
-  return [`*Question ${index + 1} of ${quiz.questions.length}*`, '', q.q, '', opts, '', 'Reply A, B, C, or D. SKIP to skip, MENU to exit.'].join('\n');
+  return [
+    fill(u.quizQ, { n: index + 1, total: quiz.questions.length }),
+    '',
+    q.q,
+    '',
+    opts,
+    '',
+    u.quizFooter,
+  ].join('\n');
 }
 
 function renderGlossary(g) {
@@ -618,8 +623,9 @@ function renderGlossary(g) {
   return `${g.intro}\n\n${list}\n\n0️⃣ Back`;
 }
 
-function renderLanguageMenu() {
-  return ['🌐 Language Selection', '👉 Please choose your preferred language:', '1️⃣ English', '2️⃣ Amharic', '3️⃣ Afaan Oromo', '', '0️⃣ Back'].join('\n');
+function renderLanguageMenu(content) {
+  const u = content.strings.ui;
+  return [u.langTitle, u.langPrompt, '1  English', '2  Amharic', '3  Afaan Oromo', '', u.langBack].join('\n');
 }
 
 // ── Quick-reply buttons for richer clients (tester / WhatsApp interactive) ────

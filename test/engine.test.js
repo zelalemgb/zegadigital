@@ -96,7 +96,7 @@ test('PROGRESS and LANGUAGE work as jump-anywhere shortcuts', () => {
 
   const lang = run(['Hi', '1', '1', '1', 'LANGUAGE'], READY);
   assert.equal(lang.session.cursor.type, 'language');
-  assert.match(joined(lang), /Language Selection/);
+  assert.match(joined(lang), /Choose your language/i);
 });
 
 test('MENU returns home; STOP exits but remembers the track', () => {

@@ -37,7 +37,7 @@ test('selecting a track shows the mission with the next lesson', () => {
   assert.equal(r.session.track, 'youth');
   assert.match(joined(r), /Today's lesson/);
   assert.match(joined(r), /Introduction to Privacy/);
-  assert.match(joined(r), /Your learning so far/);
+  assert.match(joined(r), /Reply with a number/);
   // The track-selected event is emitted for the runtime to persist.
   assert.ok(run(['Hi', '1', '1'], READY).events.some((e) => e.type === 'trackSelected'));
 });

@@ -169,23 +169,23 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
   const msgs = messages || [];
   // WhatsApp can't render custom icons inline; send clean, emoji-free text.
   const btns = actions.map((a) => ({ id: a.value, title: stripEmoji(a.label) || a.label }));
+  // Reply buttons are only used for short "flow" screens (≤3 clear next-steps).
+  // Menu screens (more options) rely on the numbered text — sending a separate
+  // WhatsApp list message duplicates the menu and renders poorly, so we don't.
+  const showButtons = actions.length >= 1 && actions.length <= 3 && actionStyle !== 'list';
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i];
     const text = stripEmoji(typeof m === 'string' ? m : m.text || '');
     const link = mediaUrl(m && m.image);
     const isLast = i === msgs.length - 1;
-    const useButtons = isLast && actions.length && actionStyle !== 'list' && actions.length <= 3;
     // eslint-disable-next-line no-await-in-loop
-    if (useButtons) {
+    if (isLast && showButtons) {
       await sendButtons(to, text, btns, link);
     } else if (link) {
       await sendImage(to, link, text);
     } else if (text) {
       await sendText(to, text);
     }
-  }
-  if (actions.length && (actionStyle === 'list' || actions.length > 3)) {
-    await sendList(to, 'Tap to choose', 'Menu', btns);
   }
 }
 

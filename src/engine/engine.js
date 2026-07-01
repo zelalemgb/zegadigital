@@ -497,32 +497,25 @@ function renderHome(session, content) {
   const prog = curriculum.trackProgress(content, session.track, CTX.completed);
   const next = curriculum.nextLesson(content, session.track, CTX.completed);
   const streak = p.streak || 0;
-  const streakLine =
-    streak > 0
-      ? `Day streak: ${streak} — you've learned ${streak} day${streak > 1 ? 's' : ''} in a row`
-      : 'Day streak: 0 — learn a little each day to build one';
+  const streakShort = streak > 0 ? `${streak}-day streak` : 'no streak yet';
 
   const lines = ['Welcome back 👋', ''];
   if (next) {
-    lines.push("*Today's lesson*", next.title, `From: ${next.module.label} · about 2 minutes`, '');
+    lines.push("*Today's lesson*", `${next.title} (${next.module.label}, ~2 min)`, '');
   } else {
-    lines.push("*Today's lesson*", "You've finished every lesson in this track. Well done!", '');
+    lines.push("*Today's lesson*", "You've finished this track. Well done!", '');
   }
+  // Options first so they stay visible (WhatsApp truncates long messages).
   lines.push(
-    '*Your learning so far*',
-    `Level: ${li.name} (${li.index + 1} of ${LEVELS.length})`,
-    `Points: ${points}`,
-    streakLine,
-    `Lessons finished: ${prog.done} of ${prog.total}`,
-    `Badges earned: ${CTX.earnedBadges.length}`,
-    '',
     '*Reply with a number:*',
     next ? "1  Start today's lesson" : '1  Take the track quiz',
-    '2  See my progress',
+    '2  My progress & badges',
     '3  Browse all topics',
     '4  Take a quiz',
     '5  Change language',
-    '6  More (glossary, help, about)'
+    '6  More (glossary, help, about)',
+    '',
+    `Level: ${li.name} · ${points} points · ${streakShort} · ${prog.done}/${prog.total} lessons`
   );
   return lines.join('\n');
 }

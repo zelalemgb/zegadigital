@@ -200,6 +200,19 @@ function maskId(id) {
   return s.length <= 4 ? s : '…' + s.slice(-4);
 }
 
+/**
+ * Non-sensitive aggregates safe to expose on the public landing page: how many
+ * learners have joined, and the fixed shape of the curriculum. No PII.
+ */
+function publicStats() {
+  const content = getContent('en');
+  const learners = rows('SELECT COUNT(*) c FROM profiles')[0].c || 0;
+  const lessons =
+    curriculum.allLessonIds(content, 'youth').length +
+    curriculum.allLessonIds(content, 'adult').length;
+  return { learners, lessons, languages: 3, tracks: 2 };
+}
+
 function learningGain() {
   const all = rows('SELECT user_id, kind, score, total, id FROM assessments ORDER BY id');
   const byUser = new Map();
@@ -253,4 +266,4 @@ function safe(s) {
   try { return JSON.parse(s); } catch { return null; }
 }
 
-module.exports = { summary, learningGain, lessonBreakdown, learners };
+module.exports = { summary, learningGain, lessonBreakdown, learners, publicStats };

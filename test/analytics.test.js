@@ -90,6 +90,16 @@ test('lessonBreakdown reports completions and check accuracy per lesson', () => 
   assert.ok(rows.some((r) => r.track === 'adult'));
 });
 
+test('publicStats exposes only non-sensitive aggregates', () => {
+  const s = analytics.publicStats();
+  assert.ok(s.learners >= 2, 'counts joined learners');
+  assert.equal(s.lessons, 35, 'full curriculum size');
+  assert.equal(s.languages, 3);
+  assert.equal(s.tracks, 2);
+  // No PII fields leak through.
+  assert.deepEqual(Object.keys(s).sort(), ['languages', 'learners', 'lessons', 'tracks']);
+});
+
 test('learners returns masked, per-user progress rows', () => {
   const rows = analytics.learners();
   assert.ok(rows.length >= 2);

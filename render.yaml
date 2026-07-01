@@ -31,6 +31,9 @@ services:
       # disabled (503) so learner data is never exposed by default.
       - key: ADMIN_TOKEN
         sync: false
+      # Public WhatsApp number for the landing-page QR / Chat button.
+      - key: PUBLIC_WA_NUMBER
+        sync: false
       - key: WHATSAPP_TOKEN
         sync: false
       - key: PHONE_NUMBER_ID

@@ -5,6 +5,7 @@
  *
  *   GET  /webhook  → verification handshake (Meta calls this once)
  *   POST /webhook  → inbound messages; we run the runtime and reply
+ *   GET  /         → public PWA landing page (QR to start on WhatsApp)
  *   GET  /health   → liveness probe
  *   GET  /admin    → manager analytics dashboard (HTTP Basic, ADMIN_TOKEN)
  *   GET  /admin/api→ dashboard data as JSON (same auth)
@@ -28,11 +29,35 @@ const app = express();
 // Capture the raw body so we can verify Meta's signature over the exact bytes.
 app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf; } }));
 
+const PUBLIC = path.join(__dirname, '..', 'public');
 // Serve lesson images (public URL for WhatsApp media headers).
-app.use('/img', express.static(path.join(__dirname, '..', 'public', 'img')));
+app.use('/img', express.static(path.join(PUBLIC, 'img')));
+// PWA assets (icons/manifest) and the vendored QR library. Scoped to their own
+// folders so nothing else under public/ (e.g. admin.html) is exposed at root.
+app.use('/assets', express.static(path.join(PUBLIC, 'pwa')));
+app.use('/vendor', express.static(path.join(PUBLIC, 'vendor')));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, whatsappConfigured: config.whatsapp.isConfigured });
+});
+
+// ── Public landing page (PWA) ─────────────────────────────────────────────
+app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC, 'landing.html')));
+app.get('/sw.js', (_req, res) => {
+  res.set('Cache-Control', 'no-cache'); // always revalidate the service worker
+  res.sendFile(path.join(PUBLIC, 'pwa', 'sw.js'));
+});
+app.get('/manifest.webmanifest', (_req, res) => res.sendFile(path.join(PUBLIC, 'pwa', 'manifest.webmanifest')));
+
+// Public, non-sensitive info the landing page needs (WA deep-link + aggregates).
+app.get('/public.json', (_req, res) => {
+  const num = config.publicWaNumber;
+  const msg = encodeURIComponent(config.publicWaMessage);
+  res.json({
+    waNumber: num || null,
+    waLink: num ? `https://wa.me/${num}?text=${msg}` : null,
+    stats: analytics.publicStats(),
+  });
 });
 
 // ── Manager dashboard (protected) ─────────────────────────────────────────

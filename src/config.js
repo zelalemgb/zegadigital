@@ -9,6 +9,11 @@ const config = {
   // Password for the manager dashboard at /admin (HTTP Basic). Unset = disabled.
   adminToken: process.env.ADMIN_TOKEN || '',
 
+  // Public WhatsApp number (international format, digits only) the landing-page
+  // QR code and "Chat" button deep-link to. Unset = the page shows a placeholder.
+  publicWaNumber: (process.env.PUBLIC_WA_NUMBER || '').replace(/[^\d]/g, ''),
+  publicWaMessage: process.env.PUBLIC_WA_MESSAGE || 'Hi',
+
   whatsapp: {
     token: process.env.WHATSAPP_TOKEN || '',
     phoneNumberId: process.env.PHONE_NUMBER_ID || '',

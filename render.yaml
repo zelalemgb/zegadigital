@@ -1,0 +1,43 @@
+# Render Blueprint for the Zega Digital WhatsApp bot.
+# Deploy: Render Dashboard → New → Blueprint → pick this repo → Apply.
+# Secrets (sync: false) are entered in the dashboard, never committed.
+services:
+  - type: web
+    name: zega-digital-bot
+    runtime: node
+    plan: starter            # Starter or higher is required for a persistent disk
+    region: frankfurt        # closest region to Ethiopia; change if preferred
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: zega-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0
+      - key: ZEGA_DB
+        value: /var/data/zega.db
+      - key: RUN_SCHEDULER
+        value: "true"
+      - key: WHATSAPP_API_VERSION
+        value: v21.0
+      - key: DEFAULT_LANG
+        value: en
+      # ── Secrets — set these in the Render dashboard (Environment tab) ──
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_BUSINESS_ACCOUNT_ID
+        sync: false
+      - key: APP_ID
+        sync: false
+      - key: APP_SECRET
+        sync: false
+      - key: VERIFY_TOKEN
+        sync: false
+      - key: MEDIA_BASE_URL
+        sync: false

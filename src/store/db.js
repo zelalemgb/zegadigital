@@ -29,8 +29,10 @@ const { DatabaseSync } = require('node:sqlite');
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const DB_PATH = process.env.ZEGA_DB || path.join(DATA_DIR, 'zega.db');
 
-if (DB_PATH !== ':memory:' && !fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+// Ensure the parent directory exists (handles a custom ZEGA_DB on a mounted disk).
+if (DB_PATH !== ':memory:') {
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 const db = new DatabaseSync(DB_PATH);

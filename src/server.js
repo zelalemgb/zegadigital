@@ -4,20 +4,29 @@
  * Express server exposing the Meta WhatsApp Cloud API webhook.
  *
  *   GET  /webhook  → verification handshake (Meta calls this once)
- *   POST /webhook  → inbound messages; we run the engine and reply
+ *   POST /webhook  → inbound messages; we run the runtime and reply
  *   GET  /health   → liveness probe
+ *   GET  /img/*    → lesson illustrations (so MEDIA_BASE_URL can point here)
  *
- * Run locally, expose with a tunnel (e.g. ngrok), and register the public
- * https URL + VERIFY_TOKEN in the Meta App dashboard. See README for steps.
+ * Inbound POSTs are authenticated with the X-Hub-Signature-256 header when
+ * APP_SECRET is set. Register the public https URL + VERIFY_TOKEN in the Meta
+ * App dashboard. See README for steps.
  */
 
+const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const config = require('./config');
 const runtime = require('./runtime');
 const wa = require('./whatsapp/cloudApi');
+const { startScheduler } = require('./scheduler/runner');
 
 const app = express();
-app.use(express.json());
+// Capture the raw body so we can verify Meta's signature over the exact bytes.
+app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf; } }));
+
+// Serve lesson images (public URL for WhatsApp media headers).
+app.use('/img', express.static(path.join(__dirname, '..', 'public', 'img')));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, whatsappConfigured: config.whatsapp.isConfigured });
@@ -36,8 +45,24 @@ app.get('/webhook', (req, res) => {
   return res.sendStatus(403);
 });
 
+// Verify X-Hub-Signature-256 against APP_SECRET (skipped if no secret set).
+function signatureValid(req) {
+  if (!config.whatsapp.appSecret) return true; // dev / not configured
+  const header = req.get('x-hub-signature-256') || '';
+  if (!header.startsWith('sha256=') || !req.rawBody) return false;
+  const expected = 'sha256=' +
+    crypto.createHmac('sha256', config.whatsapp.appSecret).update(req.rawBody).digest('hex');
+  const a = Buffer.from(header);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 // ── Inbound messages (POST) ───────────────────────────────────────────────
 app.post('/webhook', async (req, res) => {
+  if (!signatureValid(req)) {
+    console.warn('❌ Invalid webhook signature — rejected');
+    return res.sendStatus(401);
+  }
   // Acknowledge immediately so Meta doesn't retry; process in the background.
   res.sendStatus(200);
 
@@ -53,10 +78,7 @@ app.post('/webhook', async (req, res) => {
     if (!m.from) continue;
     try {
       if (m.id) wa.markRead(m.id);
-
-      // Non-text (image/audio/etc.): nudge the user back to the menu flow.
       const input = m.text == null ? '' : m.text;
-
       const result = runtime.processMessage(m.from, input);
       await wa.sendTurn(m.from, result.messages, result.actions, result.actionStyle);
     } catch (err) {
@@ -68,11 +90,10 @@ app.post('/webhook', async (req, res) => {
 app.listen(config.port, () => {
   console.log(`🤖 Zega Digital bot listening on :${config.port}`);
   if (!config.whatsapp.isConfigured) {
-    console.log(
-      '⚠️  WhatsApp Cloud API not configured (WHATSAPP_TOKEN / PHONE_NUMBER_ID).'
-    );
+    console.log('⚠️  WhatsApp Cloud API not configured (WHATSAPP_TOKEN / PHONE_NUMBER_ID).');
     console.log('   The webhook will still verify; run `npm run cli` to test the flow locally.');
   }
+  if (config.runScheduler) startScheduler();
 });
 
 module.exports = app;

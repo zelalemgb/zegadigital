@@ -39,6 +39,10 @@
   .reward .bubble { background: #1f3d2f; border: 1px solid #2e6b4f; }
   .typing { color: var(--muted); font-size: 13px; padding: 2px 6px; }
   .bimg { width: 100%; border-radius: 6px; margin-bottom: 6px; display: block; }
+  .ic { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.16em; opacity: 0.9; }
+  .num { display: inline-flex; align-items: center; justify-content: center; min-width: 1.15em; height: 1.15em;
+    padding: 0 0.25em; margin-right: 1px; border-radius: 4px; background: rgba(255,255,255,0.10);
+    font-size: 0.82em; font-weight: 500; vertical-align: 1px; }
   .quickbar { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 4px; background: #111b21;
     border-top: 1px solid rgba(255,255,255,0.05); min-height: 14px; max-height: 230px; overflow-y: auto; }
   .rbtn { width: 100%; text-align: center; color: var(--accent); background: var(--header); border: none;
@@ -102,7 +106,49 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
-  function format(t) { return escapeHtml(t).replace(/\*(.+?)\*/g, '<strong>$1</strong>').replace(/_(.+?)_/g, '<em>$1</em>'); }
+
+  // Load the monoline icon sprite so <use href="#ic-…"> resolves.
+  const spriteReady = fetch('/icons.svg').then(r => r.text())
+    .then(t => document.body.insertAdjacentHTML('afterbegin', t)).catch(() => {});
+
+  // Map the bot's emojis to the custom minimal icon set. Anything not mapped is
+  // stripped, so messages stay clean and consistent instead of emoji-heavy.
+  const EMOJI_MAP = {
+    '🤖':'robot','👋':'wave','💡':'bulb','🧭':'compass','🏠':'home','📋':'list','🗒️':'list',
+    '❌':'x','✅':'check','✔️':'check','🔙':'arrow-left','➡️':'arrow-right','▶️':'play',
+    '🌍':'globe','🌐':'globe','ℹ️':'info','📖':'book','📚':'book','🆘':'help',
+    '🧒':'user','🧑':'user','👤':'user','👩‍🏫':'user','👨‍👩‍👧':'users','👩‍👩‍👧‍👦':'users','🤝':'users',
+    '🔐':'lock','🔒':'lock','🔑':'key','🛡️':'shield','🛡':'shield','⚠️':'warning','🚨':'warning',
+    '🎣':'hook','💚':'heart','❤️':'heart','💙':'heart','💻':'screen','🖥️':'screen','📱':'phone',
+    '🧠':'quiz','🤔':'quiz','❓':'quiz','⭐':'star','🌟':'star','✨':'star',
+    '🔥':'flame','🏅':'award','🎖️':'award','🏆':'award','🎉':'celebrate','🥇':'award',
+    '🌱':'sprout','🔰':'sprout','🥈':'shield','🎓':'award','📈':'trending-up','📊':'chart',
+    '🔔':'bell','🔕':'bell-off','🎯':'target','📌':'pin','👀':'eye','👁️':'eye',
+    '🚫':'ban','⛔':'ban','🚩':'flag','⏱️':'clock','⏰':'clock','🕐':'clock','💬':'chat',
+    '🔎':'search','🔍':'search','🕵️':'search','⚙️':'gear','🍪':'cookie','🪪':'id','🆔':'id',
+    '📸':'camera','📷':'camera','✍️':'write','🚀':'rocket','🧩':'check','🙈':'eye','💯':'award',
+    '🛑':'ban','😶':'chat','🪞':'user','👦':'user','👧':'user','🏷️':'pin','🤵':'user','🤡':'robot',
+    '📩':'chat','📵':'phone','🎨':'star','🖌️':'write','🪄':'star','🌀':'compass','🔮':'star',
+    '🧰':'gear','🧐':'eye','🪧':'flag','💼':'screen','🏥':'shield','🏦':'lock','💳':'lock',
+    '🔗':'globe','♻️':'arrow-right','🔁':'arrow-right','🔄':'arrow-right','📞':'phone','📧':'chat',
+    '🤫':'lock','🕶️':'eye','📏':'list','🔡':'list','🔢':'list','❗':'warning','😠':'warning',
+    '⛓️':'lock','📲':'phone','🦸':'shield','🦠':'warning','🕵️‍♂️':'search','💀':'warning','🎭':'eye',
+    '🎵':'play','🎬':'play','🖼️':'camera','📝':'write','😀':'chat','💭':'chat','⚖️':'shield',
+    '📜':'book','🙏':'users','📢':'bell','🫧':'cookie','🟢':'check','🟡':'warning','🔴':'ban',
+    '🚦':'warning','🐾':'search','☢️':'warning','🟩':'check','🏔️':'flame','⚡':'flame','🏁':'flag',
+    '💪':'award','🤖':'robot','🔤':'list','🎛️':'gear','👨‍👩‍👧‍👦':'users','💰':'lock','🕉️':'globe',
+    '👍':'check','🤵':'user','🏢':'screen','🧑‍💻':'user','🧑‍🏫':'user','🗺️':'globe','🧗':'trending-up',
+    '🏗️':'gear','🚧':'gear','🪪':'id','🧾':'list','⬇️':'arrow-right','📶':'phone','🟠':'warning'
+  };
+  function iconHtml(name) { return '<svg class="ic" aria-hidden="true"><use href="#ic-' + name + '"></use></svg>'; }
+  function iconize(html) {
+    for (const e in EMOJI_MAP) { if (html.indexOf(e) >= 0) html = html.split(e).join(iconHtml(EMOJI_MAP[e])); }
+    html = html.replace(/([0-9])️?⃣/g, '<span class="num">$1</span>').replace(/\u{1F51F}/gu, '<span class="num">10</span>');
+    // Strip any remaining emoji / variation selectors / joiners.
+    html = html.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{2190}-\u{21FF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{2122}\u{2139}]/gu, '');
+    return html;
+  }
+  function format(t) { return iconize(escapeHtml(t).replace(/\*(.+?)\*/g, '<strong>$1</strong>').replace(/_(.+?)_/g, '<em>$1</em>')); }
   function nowTime() { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
 
   function isReward(t) { return /^(⭐|🏅|🎉|🔥)/.test(t); }
@@ -121,11 +167,11 @@
 
   function updateStats(p) {
     if (!p) return;
-    const medals = ['🌱','🔰','🥈','🛡️','🎓'];
-    document.getElementById('st-level').textContent = (medals[p.levelIndex] || '🌱') + ' ' + p.level;
-    document.getElementById('st-xp').textContent = p.xp + ' XP';
-    document.getElementById('st-streak').textContent = '🔥 ' + p.streak;
-    document.getElementById('st-badges').textContent = '🏅 ' + p.badges;
+    const levelIcons = ['sprout','user','shield','shield-check','award'];
+    document.getElementById('st-level').innerHTML = iconHtml(levelIcons[p.levelIndex] || 'sprout') + ' ' + escapeHtml(p.level);
+    document.getElementById('st-xp').innerHTML = iconHtml('star') + ' ' + p.xp + ' XP';
+    document.getElementById('st-streak').innerHTML = iconHtml('flame') + ' ' + p.streak;
+    document.getElementById('st-badges').innerHTML = iconHtml('award') + ' ' + p.badges;
   }
   function renderActions(actions, style) {
     quickbar.innerHTML = '';
@@ -135,13 +181,14 @@
       quickbar.appendChild(cap);
       actions.forEach(a => {
         const r = document.createElement('button'); r.className = 'lrow';
-        r.innerHTML = '<span>' + a.label + '</span><span class="chev">›</span>';
+        r.innerHTML = '<span>' + iconize(escapeHtml(a.label)) + '</span><span class="chev">›</span>';
         r.onclick = () => sendText(a.value);
         quickbar.appendChild(r);
       });
     } else {
       actions.forEach(a => {
-        const b = document.createElement('button'); b.className = 'rbtn'; b.textContent = a.label;
+        const b = document.createElement('button'); b.className = 'rbtn';
+        b.innerHTML = iconize(escapeHtml(a.label));
         b.onclick = () => sendText(a.value);
         quickbar.appendChild(b);
       });
@@ -165,6 +212,7 @@
   }
 
   async function start() {
+    await spriteReady;
     chat.innerHTML = ''; statusEl.textContent = 'connecting…';
     for (let i = 0; i < 5; i++) {
       try { const data = await post('/api/start', { userId, today: todayStr() }); statusEl.textContent = 'online'; await renderBot(data, true); return; }

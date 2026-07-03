@@ -114,6 +114,11 @@ function route(session, content, text, cmd) {
   if (cmd.startsWith('REMIND')) return handleRemind(session, content, cmd);
   if (cmd === 'BASELINE') return offerAssessment(session, content, 'baseline');
   if (cmd === 'FINAL' || cmd === 'ASSESS') return offerAssessment(session, content, 'endline');
+  // Re-request the completion certificate at any time (runtime issues it).
+  if (cmd === 'CERTIFICATE' || cmd === 'CERT') {
+    emit('certificateRequest', {});
+    return out(session, []);
+  }
 
   const cur = session.cursor || { type: 'home' };
   switch (cur.type) {
@@ -141,6 +146,8 @@ function route(session, content, text, cmd) {
       return handleAssessmentOffer(session, content, cur, cmd);
     case 'assessment':
       return handleAssessment(session, content, cur, cmd);
+    case 'certname':
+      return handleCertName(session, content, cur, text, cmd);
     default:
       return goTo(session, content, 'HOME');
   }
@@ -242,6 +249,25 @@ function renderAssessmentQ(items, index) {
     .map((k) => `${k}) ${q.options[k]}`)
     .join('\n');
   return [`📋 ${index + 1} of ${items.length}`, '', q.q, '', opts, '', 'Reply A, B, C, or D'].join('\n');
+}
+
+// ── Certificate name capture ─────────────────────────────────────────────────
+function sanitizeName(text) {
+  const t = String(text || '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (t.length < 2 || t.length > 48) return null;
+  return t;
+}
+
+function handleCertName(session, content, cur, text, cmd) {
+  const u = content.strings.ui;
+  if (cmd === 'MENU' || cmd === 'HOME' || cmd === 'SKIP') {
+    return goTo(session, content, cmd === 'MENU' ? 'MAIN' : 'HOME', [u.certSkipped]);
+  }
+  const name = sanitizeName(text);
+  if (!name) return out(session, [u.certNameInvalid]);
+  emit('certificateReady', { name, track: cur.track });
+  session.cursor = { type: 'home' }; // runtime appends the certificate image next
+  return out(session, [fill(u.certGenerating, { name })]);
 }
 
 // ── HOME / mission screen ────────────────────────────────────────────────────
@@ -706,6 +732,8 @@ function deriveActions(session, content) {
       return [act('▶️ Start', 'START'), act('Skip', 'SKIP')];
     case 'assessment':
       return [act('A', 'A'), act('B', 'B'), act('C', 'C'), act('D', 'D')];
+    case 'certname':
+      return [act('Skip', 'SKIP')];
     default:
       return [];
   }

@@ -144,6 +144,14 @@ module.exports = {
       rewardGain: 'Your score went from {{before}}% at the start to {{after}}% now',
       rewardGainProgress: " — that's {{delta}} points of progress. Well done!",
       optInPrompt: 'Want a daily reminder to keep your streak going? Reply REMIND ON (or REMIND 19 for a 7pm reminder).',
+      // Certificate of completion
+      certEarnedAskName: "🎓 *Congratulations!* You've finished every lesson and passed the quiz — you've earned your Zega Digital certificate!\n\nWhat name should we print on it? Reply with your full name (or SKIP).",
+      certNameInvalid: 'Please reply with the name to print on your certificate (2–48 characters), or SKIP.',
+      certGenerating: '🎉 Perfect, {{name}}! Here is your certificate:',
+      certCaption: '🎓 Zega Digital — Certificate of Completion',
+      certVerify: '✅ Keep this! Anyone can verify it at:\n{{url}}',
+      certNotYet: '🎓 Finish every lesson in your track and pass the quiz to earn your certificate. Reply 1 to keep learning!',
+      certSkipped: 'No problem — reply CERTIFICATE anytime to get your certificate.',
     },
   },
 

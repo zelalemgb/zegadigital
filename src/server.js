@@ -6,6 +6,8 @@
  *   GET  /webhook  → verification handshake (Meta calls this once)
  *   POST /webhook  → inbound messages; we run the runtime and reply
  *   GET  /         → public PWA landing page (QR to start on WhatsApp)
+ *   GET  /cert/:code.png → completion certificate image (public)
+ *   GET  /verify/:code   → public certificate verification page
  *   GET  /health   → liveness probe
  *   GET  /admin    → manager analytics dashboard (cookie session; ADMIN_TOKEN)
  *   GET  /admin/login, POST /admin/login, GET /admin/logout → session auth
@@ -24,6 +26,8 @@ const config = require('./config');
 const runtime = require('./runtime');
 const wa = require('./whatsapp/cloudApi');
 const analytics = require('./analytics');
+const db = require('./store/db');
+const certs = require('./certificates');
 const { startScheduler } = require('./scheduler/runner');
 
 const app = express();
@@ -49,6 +53,29 @@ app.get('/sw.js', (_req, res) => {
   res.sendFile(path.join(PUBLIC, 'pwa', 'sw.js'));
 });
 app.get('/manifest.webmanifest', (_req, res) => res.sendFile(path.join(PUBLIC, 'pwa', 'manifest.webmanifest')));
+
+// ── Certificates (public) ─────────────────────────────────────────────────
+function baseUrl(req) {
+  return (config.mediaBaseUrl || '').replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
+}
+// Certificate image, rendered on demand from the stored row. WhatsApp fetches
+// this URL, and the verify page embeds it.
+app.get(/^\/cert\/([A-Za-z0-9-]+)\.png$/, async (req, res) => {
+  const cert = db.getCertificateByCode(req.params[0]);
+  if (!cert) return res.sendStatus(404);
+  try {
+    const png = await certs.renderPng(cert, baseUrl(req));
+    res.set('Content-Type', 'image/png').set('Cache-Control', 'public, max-age=86400').send(png);
+  } catch (err) {
+    console.error('Certificate render error:', err);
+    res.sendStatus(500);
+  }
+});
+// Public verification page.
+app.get('/verify/:code', (req, res) => {
+  const cert = db.getCertificateByCode(req.params.code);
+  res.status(cert ? 200 : 404).send(certs.verifyHtml(cert, baseUrl(req)));
+});
 
 // Public, non-sensitive info the landing page needs (WA deep-link + aggregates).
 app.get('/public.json', (_req, res) => {

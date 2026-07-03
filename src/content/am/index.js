@@ -153,6 +153,13 @@ module.exports = {
       rewardGain: 'ውጤትዎ ከመነሻ {{before}}% ወደ {{after}}% ደርሷል',
       rewardGainProgress: ' — ያ {{delta}} ነጥብ እድገት ነው። በጣም ጥሩ!',
       optInPrompt: 'ተከታታይነትዎን ለመጠበቅ ዕለታዊ ማስታወሻ ይፈልጋሉ? REMIND ON ይላኩ (ወይም ለ7pm REMIND 19)።',
+      certEarnedAskName: '🎓 *እንኳን ደስ አለዎት!* ሁሉንም ትምህርቶች አጠናቅቀው ፈተናውን አልፈዋል — የዜጋ ዲጂታል የምስክር ወረቀትዎን አግኝተዋል!\n\nበላዩ ላይ የሚጻፈውን ስም ይላኩ (ወይም SKIP)።',
+      certNameInvalid: 'እባክዎ በምስክር ወረቀትዎ ላይ የሚጻፈውን ስም ይላኩ (2–48 ፊደላት)፣ ወይም SKIP።',
+      certGenerating: '🎉 በጣም ጥሩ፣ {{name}}! የእርስዎ የምስክር ወረቀት ይኸውና፡',
+      certCaption: '🎓 ዜጋ ዲጂታል — የማጠናቀቅ የምስክር ወረቀት',
+      certVerify: '✅ ይህን ያስቀምጡ! ማንኛውም ሰው እዚህ ማረጋገጥ ይችላል፡\n{{url}}',
+      certNotYet: '🎓 የምስክር ወረቀትዎን ለማግኘት ሁሉንም ትምህርቶች ጨርሰው ፈተናውን ያልፉ። ለመቀጠል 1 ይላኩ!',
+      certSkipped: 'ችግር የለም — በማንኛውም ጊዜ የምስክር ወረቀትዎን ለማግኘት CERTIFICATE ይላኩ።',
     },
   },
 

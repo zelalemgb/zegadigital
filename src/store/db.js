@@ -89,6 +89,14 @@ db.exec(`
     ts        TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, lesson_id)
   );
+  CREATE TABLE IF NOT EXISTS certificates (
+    code      TEXT PRIMARY KEY,   -- public verification code
+    user_id   TEXT,
+    name      TEXT,               -- name printed on the certificate
+    track     TEXT,               -- 'youth' | 'adult'
+    issued_at TEXT DEFAULT (datetime('now')),
+    UNIQUE (user_id, track)       -- one certificate per learner per track
+  );
 `);
 
 // Lightweight migrations: add columns that older databases may lack.
@@ -98,6 +106,7 @@ function ensureColumn(table, name, type) {
 }
 ensureColumn('profiles', 'last_nudge_day', 'TEXT');
 ensureColumn('profiles', 'reminders_prompted', 'INTEGER DEFAULT 0');
+ensureColumn('profiles', 'name', 'TEXT'); // learner's name, for certificates
 
 // ── Prepared statements ──────────────────────────────────────────────────
 const stmt = {
@@ -134,6 +143,13 @@ const stmt = {
     ON CONFLICT(user_id, lesson_id) DO UPDATE SET correct = excluded.correct, ts = excluded.ts
   `),
   getCheckResults: db.prepare('SELECT lesson_id, correct FROM check_results WHERE user_id = ?'),
+  setName: db.prepare('UPDATE profiles SET name = ? WHERE user_id = ?'),
+  quizEvents: db.prepare("SELECT data FROM events WHERE user_id = ? AND type = 'quizFinished'"),
+  insertCertificate: db.prepare(
+    'INSERT OR IGNORE INTO certificates (code, user_id, name, track) VALUES (?, ?, ?, ?)'
+  ),
+  getCertByUserTrack: db.prepare('SELECT * FROM certificates WHERE user_id = ? AND track = ?'),
+  getCertByCode: db.prepare('SELECT * FROM certificates WHERE code = ?'),
 };
 
 // ── Profile ───────────────────────────────────────────────────────────────
@@ -186,6 +202,7 @@ function rowToProfile(row) {
     reminderHour: row.reminder_hour == null ? 19 : row.reminder_hour,
     lastNudgeDay: row.last_nudge_day || null,
     remindersPrompted: Boolean(row.reminders_prompted),
+    name: row.name || null,
     session: row.session ? safeParse(row.session) : null,
   };
 }
@@ -231,6 +248,38 @@ function recordCheckResult(userId, lessonId, correct) {
   stmt.upsertCheckResult.run(userId, lessonId, correct ? 1 : 0);
 }
 
+// ── Name + certificates ──────────────────────────────────────────────────────
+function setName(userId, name) {
+  stmt.setName.run(name, userId);
+}
+
+/** Tracks whose quiz the user has passed (from the event log). */
+function getPassedQuizTracks(userId) {
+  const tracks = new Set();
+  for (const r of stmt.quizEvents.all(userId)) {
+    try {
+      const d = JSON.parse(r.data);
+      if (d && d.passed && d.track) tracks.add(d.track);
+    } catch {
+      /* ignore malformed rows */
+    }
+  }
+  return tracks;
+}
+
+function getCertificate(userId, track) {
+  return stmt.getCertByUserTrack.get(userId, track) || null;
+}
+
+function issueCertificate(code, userId, name, track) {
+  stmt.insertCertificate.run(code, userId, name, track);
+  return getCertificate(userId, track); // returns the existing row if one already existed
+}
+
+function getCertificateByCode(code) {
+  return stmt.getCertByCode.get(code) || null;
+}
+
 function getCheckResults(userId) {
   const out = new Map();
   for (const r of stmt.getCheckResults.all(userId)) out.set(r.lesson_id, Boolean(r.correct));
@@ -252,4 +301,9 @@ module.exports = {
   getAssessments,
   recordCheckResult,
   getCheckResults,
+  setName,
+  getPassedQuizTracks,
+  getCertificate,
+  issueCertificate,
+  getCertificateByCode,
 };

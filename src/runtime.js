@@ -24,6 +24,7 @@ const streak = require('./gamification/streak');
 const badges = require('./gamification/badges');
 const { AWARDS, LEVELS, levelInfo } = require('./gamification/xp');
 const nudges = require('./scheduler/nudges');
+const certs = require('./certificates');
 const { getContent } = require('./content');
 const { fill } = require('./util/text');
 
@@ -149,6 +150,10 @@ function processMessage(userId, input, opts = {}) {
     db.logEvent(userId, 'badge', { id: b.id });
   }
 
+  // Certificate: earned on completing every lesson AND passing the track quiz.
+  const justProgressed = completedThisTurn || Boolean(quizFinishedEvent);
+  const certMsgs = handleCertificates(userId, profile, session, content, completed, result.events, justProgressed);
+
   // One-time opt-in nudge after the user finishes their first lesson.
   let optInPrompt = null;
   if (completedThisTurn && !profile.optInReminders && !profile.remindersPrompted) {
@@ -201,11 +206,69 @@ function processMessage(userId, input, opts = {}) {
   // objects; daily/reward bubbles are plain strings.
   const toMsg = (m) => (typeof m === 'string' ? { text: m } : m);
   return {
-    messages: [...prepend.map(toMsg), ...result.messages, ...rewards.map(toMsg)],
+    messages: [...prepend.map(toMsg), ...result.messages, ...rewards.map(toMsg), ...certMsgs.map(toMsg)],
     actions: result.actions,
     actionStyle: result.actionStyle,
     profile: publicProfile(profile, earnedSet.size),
   };
+}
+
+// ── Certificates ─────────────────────────────────────────────────────────────
+// Earned once per track after every lesson is complete AND the track quiz is
+// passed. Issued here (not the pure engine) because it needs the DB and image
+// rendering. Returns extra bubbles to append; may set the name-capture cursor.
+function handleCertificates(userId, profile, session, content, completed, events, justProgressed) {
+  const u = content.strings.ui;
+  const msgs = [];
+  const track = session.track;
+
+  // 1) Name just captured by the engine → issue immediately.
+  const ready = events.find((e) => e.type === 'certificateReady');
+  if (ready) {
+    db.setName(userId, ready.name);
+    profile.name = ready.name;
+    issueAndRender(userId, ready.name, ready.track, content, msgs);
+    return msgs;
+  }
+  if (!track) return msgs;
+
+  const eligible =
+    curriculum.trackProgress(content, track, completed).complete &&
+    db.getPassedQuizTracks(userId).has(track);
+  const already = db.getCertificate(userId, track);
+
+  // 2) Explicit CERTIFICATE request.
+  if (events.some((e) => e.type === 'certificateRequest')) {
+    if (already) return (issueAndRender(userId, already.name, track, content, msgs), msgs);
+    if (!eligible) return (msgs.push(u.certNotYet), msgs);
+    return askOrIssue(userId, profile, session, content, track, msgs);
+  }
+
+  // 3) Auto: crossed the finish line this turn.
+  if (justProgressed && eligible && !already) askOrIssue(userId, profile, session, content, track, msgs);
+  return msgs;
+}
+
+function askOrIssue(userId, profile, session, content, track, msgs) {
+  if (profile.name) issueAndRender(userId, profile.name, track, content, msgs);
+  else {
+    session.cursor = { type: 'certname', track };
+    msgs.push(content.strings.ui.certEarnedAskName);
+  }
+  return msgs;
+}
+
+function issueAndRender(userId, name, track, content, msgs) {
+  const u = content.strings.ui;
+  let cert = db.getCertificate(userId, track);
+  if (!cert) {
+    cert = db.issueCertificate(certs.generateCode(), userId, name, track);
+    db.logEvent(userId, 'certificateIssued', { track, code: cert.code });
+  }
+  const host = (config.mediaBaseUrl || '').replace(/\/$/, '');
+  const verifyUrl = host ? `${host}/verify/${cert.code}` : `verify/${cert.code}`;
+  msgs.push({ text: u.certCaption, image: `/cert/${cert.code}.png` });
+  msgs.push(fill(u.certVerify, { url: verifyUrl }));
 }
 
 /** Begin (or resume) a conversation — keeps earned XP/badges, resets the cursor. */

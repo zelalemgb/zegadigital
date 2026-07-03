@@ -153,6 +153,13 @@ module.exports = {
       rewardGain: 'Qabxiin kee jalqaba {{before}}% irraa gara {{after}}% amma ga’e',
       rewardGainProgress: ' — kun guddina qabxii {{delta}} ti. Hojii gaarii!',
       optInPrompt: 'Guyyaa guyyaan yaadachiisa argachuu barbaaddaa? REMIND ON jedhi (ykn sa’a 7pmf REMIND 19).',
+      certEarnedAskName: "🎓 *Baga gammadde!* Barnoota hunda xumurtee qormaata dabarte — waraqaa ragaa Dijitaala Zeegaa argatteetta!\n\nMaqaa isa irratti barreeffamu ergi (ykn SKIP).",
+      certNameInvalid: 'Maaloo maqaa waraqaa ragaa kee irratti barreeffamu ergi (qubee 2–48), ykn SKIP.',
+      certGenerating: '🎉 Gaarii, {{name}}! Waraqaan ragaa kee kunooti:',
+      certCaption: '🎓 Dijitaala Zeegaa — Waraqaa Ragaa Xumuraa',
+      certVerify: "✅ Kana ol kaa'i! Namni kamiyyuu asitti mirkaneessuu danda'a:\n{{url}}",
+      certNotYet: '🎓 Waraqaa ragaa kee argachuuf barnoota hunda xumuriitii qormaata dabarsi. Itti fufuuf 1 ergi!',
+      certSkipped: "Rakkoo hin qabu — yeroo barbaadde CERTIFICATE erguun waraqaa ragaa kee argachuu dandeessa.",
     },
   },
 

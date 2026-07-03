@@ -58,6 +58,18 @@ app.get('/manifest.webmanifest', (_req, res) => res.sendFile(path.join(PUBLIC, '
 function baseUrl(req) {
   return (config.mediaBaseUrl || '').replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
 }
+// A sample certificate (no DB row) — useful for previews and for confirming
+// the renderer works in production. Registered before the code route below.
+const SAMPLE_CERT = { code: 'SAMPLE', name: 'Sample Learner', track: 'youth', issued_at: '2026-01-01 00:00:00' };
+app.get('/cert/sample.png', async (req, res) => {
+  try {
+    const png = await certs.renderPng(SAMPLE_CERT, baseUrl(req));
+    res.set('Content-Type', 'image/png').set('Cache-Control', 'public, max-age=3600').send(png);
+  } catch (err) {
+    console.error('Sample certificate render error:', err);
+    res.sendStatus(500);
+  }
+});
 // Certificate image, rendered on demand from the stored row. WhatsApp fetches
 // this URL, and the verify page embeds it.
 app.get(/^\/cert\/([A-Za-z0-9-]+)\.png$/, async (req, res) => {

@@ -99,13 +99,56 @@ test('PROGRESS and LANGUAGE work as jump-anywhere shortcuts', () => {
   assert.match(joined(lang), /Choose your language/i);
 });
 
-test('MENU returns home; STOP exits but remembers the track', () => {
+test('MENU opens the main menu; HOME returns to the mission; STOP remembers the track', () => {
   const menu = run(['Hi', '1', '1', '1', 'MENU']);
-  assert.equal(menu.session.cursor.type, 'home');
+  assert.equal(menu.session.cursor.type, 'menu');
+  assert.equal(menu.session.cursor.id, 'MAIN');
+  const home = run(['Hi', '1', '1', '1', 'HOME']);
+  assert.equal(home.session.cursor.type, 'home'); // mission screen
   const stop = run(['Hi', '1', '1', 'STOP']);
   assert.match(joined(stop), /Thanks for using/);
   assert.equal(stop.session.started, false);
   assert.equal(stop.session.track, 'youth'); // remembered
+});
+
+// ── Navigation hierarchy (0 / BACK, MENU, next-module, mission option 3) ──────
+const toMission = ['Hi', '1', '1', 'SKIP']; // English → Youth → skip baseline → mission
+
+test('0 / BACK climbs exactly one level: lesson → module → track → main menu', () => {
+  // mission → track topics (6) → Digital Foundations (1) → a lesson (1)
+  const atLesson = run([...toMission, '6', '1', '1']);
+  assert.equal(atLesson.session.cursor.type, 'lesson');
+
+  const toModule = run([...toMission, '6', '1', '1', '0']);
+  assert.equal(toModule.session.cursor.id, 'youth.foundations'); // lesson → its module
+
+  const toTrack = run([...toMission, '6', '1', '1', '0', 'BACK']);
+  assert.equal(toTrack.session.cursor.id, 'youth.menu'); // module → its track
+
+  const toMain = run([...toMission, '6', '1', '1', '0', 'BACK', '0']);
+  assert.equal(toMain.session.cursor.id, 'MAIN'); // track → main menu
+});
+
+test('0 on the mission screen opens the main menu instead of erroring', () => {
+  const r = run([...toMission, '0']);
+  assert.equal(r.session.cursor.type, 'menu');
+  assert.equal(r.session.cursor.id, 'MAIN');
+});
+
+test('mission option 3 opens the main menu (to switch track)', () => {
+  const r = run([...toMission, '3']);
+  assert.equal(r.session.cursor.id, 'MAIN');
+});
+
+test("Continue after a module's last lesson goes to the NEXT module's menu", () => {
+  const content = getContent('en');
+  const lastId = 'youth.foundations.cyber'; // last lesson of Digital Foundations
+  const pages = content.nodes[lastId].messages.length;
+  const answer = content.checks[lastId].answer;
+  // mission → track topics (6) → Foundations (1) → Cyber (4), read it, answer, Continue (1)
+  const r = run([...toMission, '6', '1', '4', ...Array(pages).fill('NEXT'), answer, '1']);
+  assert.equal(r.session.cursor.type, 'menu');
+  assert.equal(r.session.cursor.id, 'youth.wellness'); // next module, not the finished one
 });
 
 test('every menu option points to a resolvable target', () => {

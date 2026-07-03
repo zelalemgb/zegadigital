@@ -220,8 +220,8 @@ function startConversation(userId, opts = {}) {
   }
   profile.session = session;
   db.saveProfile(profile);
-  // Returning user → straight to home; brand-new → onboarding.
-  return processMessage(userId, profile.track ? 'MENU' : 'Hi', opts);
+  // Returning user → resume at their mission screen; brand-new → onboarding.
+  return processMessage(userId, profile.track ? 'CONTINUE' : 'Hi', opts);
 }
 
 /** Build the nudge a given user would receive (or null if not ready). */

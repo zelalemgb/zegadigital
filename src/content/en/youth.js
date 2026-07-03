@@ -26,7 +26,7 @@ module.exports = {
       { input: '5', label: '5️⃣ 🛡️ Online Safety & Well-Being', next: 'youth.safety' },
       { input: '6', label: '6️⃣ 🤖 AI Literacy', next: 'youth.ai' },
       { input: '7', label: '7️⃣ 🧠 Quiz', next: 'YOUTH_QUIZ' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
 
@@ -41,7 +41,7 @@ module.exports = {
       { input: '2', label: '2️⃣ 👤 Privacy and You', next: 'youth.foundations.privacy-you' },
       { input: '3', label: '3️⃣ 🔑 Passwords', next: 'youth.foundations.passwords' },
       { input: '4', label: '4️⃣ ⚠️ Cybersecurity, Phishing & Spam', next: 'youth.foundations.cyber' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'youth.foundations.privacy-intro': {
@@ -106,7 +106,7 @@ module.exports = {
       { input: '1', label: '1️⃣ ⭐ Online Reputation', next: 'youth.wellness.reputation' },
       { input: '2', label: '2️⃣ 📱 Social Media & Sharing', next: 'youth.wellness.social' },
       { input: '3', label: '3️⃣ 🧍 Online Presence', next: 'youth.wellness.presence' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'youth.wellness.reputation': {
@@ -155,7 +155,7 @@ module.exports = {
     options: [
       { input: '1', label: '1️⃣ 🤝 Respect & Boundaries', next: 'youth.engagement.respect' },
       { input: '2', label: '2️⃣ ❤️ Healthy Online Relationships', next: 'youth.engagement.relationships' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'youth.engagement.respect': {
@@ -193,7 +193,7 @@ module.exports = {
     body: 'Understand the technology behind your online experience.\n\n👉 Please choose a topic:',
     options: [
       { input: '1', label: '1️⃣ 🤖 Social Media & Algorithms', next: 'youth.opportunities.algorithms' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'youth.opportunities.algorithms': {
@@ -218,7 +218,7 @@ module.exports = {
       { input: '1', label: '1️⃣ ⏱️ Managing Time on Instagram & Facebook', next: 'youth.safety.time' },
       { input: '2', label: '2️⃣ 🎛️ Controlling Your Experience', next: 'youth.safety.control' },
       { input: '3', label: '3️⃣ 👶 Age-Appropriate Experiences', next: 'youth.safety.age' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'youth.safety.time': {
@@ -271,7 +271,7 @@ module.exports = {
       { input: '4', label: '4️⃣ ⚠️ AI Ethics and Safety', next: 'youth.ai.ethics' },
       { input: '5', label: '5️⃣ 🔒 Staying Safe with AI', next: 'youth.ai.safety' },
       { input: '6', label: '6️⃣ 🤖 AI & Your Future', next: 'youth.ai.future' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'youth.ai.understanding': {

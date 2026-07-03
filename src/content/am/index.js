@@ -58,8 +58,8 @@ module.exports = {
       'ጥቂት ፈጣን ጥቆማዎች፡',
       '',
       '• አማራጭ ለመምረጥ ቁጥር ይላኩ።',
-      '• አንድ ደረጃ ወደኋላ ለመመለስ 0 ይላኩ።',
-      '• በማንኛውም ጊዜ ወደ መነሻ ገጽ ለመመለስ MENU ይላኩ።',
+      '• አንድ ደረጃ ወደኋላ ለመመለስ 0 (ወይም BACK) ይላኩ።',
+      '• በማንኛውም ጊዜ ወደ ዋና ማውጫ ለመመለስ MENU ይላኩ።',
       '• መገለጫዎን ለማየት PROGRESS፣ ቋንቋ ለመቀየር LANGUAGE ይላኩ።',
       '• ለመውጣት STOP ይላኩ።',
       '',
@@ -88,7 +88,7 @@ module.exports = {
       'MENU  መነሻ',
     ].join('\n'),
 
-    lessonNav: 'ለመቀጠል NEXT ይላኩ፣ ወደኋላ ለመመለስ 0፣ ወይም ለመነሻ MENU',
+    lessonNav: 'ለመቀጠል NEXT ይላኩ፣ ወደኋላ ለመመለስ 0፣ ወይም ወደ ዋና ማውጫ MENU',
 
     ui: {
       levelNames: ['ጀማሪ', 'ተማሪ', 'ብቁ', 'ጠባቂ', 'ባለሙያ'],
@@ -105,10 +105,10 @@ module.exports = {
       optStartLesson: '1  የዛሬውን ትምህርት ጀምር',
       optStartQuiz: '1  የትራክ ፈተና ውሰድ',
       optProgress: '2  የኔ እድገት እና ባጆች',
-      optBrowse: '3  ሁሉንም ርዕሶች አስስ',
+      optBrowse: '3  ዋና ማውጫ (ትራክ መቀየሪያ)',
       optQuiz: '4  ፈተና ውሰድ',
       optLanguage: '5  ቋንቋ ቀይር',
-      optMore: '6  ተጨማሪ (የቃላት መፍቻ፣ እርዳታ፣ ስለ)',
+      optMore: '6  ሁሉንም ርዕሶች አስስ',
       statLine: 'ደረጃ፡ {{level}} · {{points}} ነጥብ · {{streak}} · {{done}}/{{total}} ትምህርቶች',
       streakDays: '{{n}} ቀናት ተከታታይ',
       streakNone: 'ገና ተከታታይ የለም',

@@ -97,7 +97,8 @@ function route(session, content, text, cmd) {
     session.track = track; // remember chosen track across sessions
     return out(session, [bye]);
   }
-  if (cmd === 'MENU' || cmd === 'HOME') return goTo(session, content, 'HOME');
+  if (cmd === 'MENU') return goTo(session, content, 'MAIN'); // top-level main menu
+  if (cmd === 'HOME') return goTo(session, content, 'HOME'); // track mission screen
   // Resume entry point — what a reminder/nudge quick-reply button maps to.
   if (cmd === 'CONTINUE' || cmd === 'RESUME') return goTo(session, content, 'HOME');
   if (cmd === 'HELP') return goTo(session, content, 'help.menu');
@@ -127,7 +128,7 @@ function route(session, content, text, cmd) {
     case 'check':
       return handleCheck(session, content, cur, cmd);
     case 'completion':
-      return handleCompletion(session, content, cur, text);
+      return handleCompletion(session, content, cur, text, cmd);
     case 'info':
       return handleInfo(session, content, cur, text);
     case 'glossary':
@@ -245,6 +246,10 @@ function renderAssessmentQ(items, index) {
 
 // ── HOME / mission screen ────────────────────────────────────────────────────
 function handleHome(session, content, cur, text, cmd) {
+  // Back/0 from the mission screen goes up to the main menu (never errors).
+  if (cmd === '0' || cmd === 'BACK') {
+    return session.track ? goTo(session, content, 'MAIN') : out(session, [renderHome(session, content)]);
+  }
   if (!session.track) {
     // Track chooser
     if (text === '1') {
@@ -272,13 +277,13 @@ function handleHome(session, content, cur, text, cmd) {
       session.cursor = { type: 'progress' };
       return out(session, [renderProgress(session, content)]);
     case '3':
-      return goTo(session, content, `${session.track}.menu`);
+      return goTo(session, content, 'MAIN'); // main menu (switch track)
     case '4':
       return goTo(session, content, session.track === 'youth' ? 'YOUTH_QUIZ' : 'ADULT_QUIZ');
     case '5':
       return goTo(session, content, 'LANGUAGE');
     case '6':
-      return goTo(session, content, 'MAIN');
+      return goTo(session, content, `${session.track}.menu`); // browse this track's topics
     default:
       return out(session, [content.strings.unrecognised, renderHome(session, content)]);
   }
@@ -288,17 +293,29 @@ function handleHome(session, content, cur, text, cmd) {
 function handleMenu(session, content, cur, text, cmd) {
   if (cmd === 'REVIEW') return goTo(session, content, cur.id);
   const node = content.nodes[cur.id];
-  if (!node) return goTo(session, content, 'HOME');
+  if (!node) return goTo(session, content, 'MAIN');
+  // Back/0 always goes up one level: module menu → its track menu; track menu → main menu.
+  if (cmd === '0' || cmd === 'BACK') return goTo(session, content, menuBack(content, cur.id));
   const option = node.options.find((o) => o.input === text);
   if (!option) return out(session, [content.strings.unrecognised, renderMenu(content, node)]);
   return goTo(session, content, option.next);
 }
 
+// The parent of a menu: a module submenu (e.g. youth.foundations) goes up to its
+// track menu (youth.menu); a track menu or anything else goes up to the main menu.
+function menuBack(content, id) {
+  for (const track of ['youth', 'adult']) {
+    if (curriculum.modulesForTrack(content, track).some((m) => m.id === id)) return `${track}.menu`;
+  }
+  return 'MAIN';
+}
+
 // ── Lessons (paginated, one bubble per turn) ─────────────────────────────────
 function handleLesson(session, content, cur, cmd) {
   const node = content.nodes[cur.id];
-  if (!node) return goTo(session, content, 'HOME');
-  if (cmd === '0') return goTo(session, content, node.parent || 'HOME');
+  if (!node) return goTo(session, content, 'MAIN');
+  // Back → the module menu this lesson belongs to.
+  if (cmd === '0' || cmd === 'BACK') return goTo(session, content, node.parent || 'MAIN');
 
   emit('lessonPage', { lessonId: cur.id });
   const nextIndex = cur.index + 1;
@@ -345,25 +362,46 @@ function showCompletion(session, content, lessonId, prefix = []) {
   return out(session, [...prefix, badge]);
 }
 
-function handleCompletion(session, content, cur, text) {
+function handleCompletion(session, content, cur, text, cmd) {
   const node = content.nodes[cur.lessonId];
-  if (text === '1') return goTo(session, content, node.next || node.parent || 'HOME');
-  if (text === '0') return goTo(session, content, node.parent || 'HOME');
+  if (text === '1' || cmd === 'NEXT') {
+    const dest = nextAfterLesson(content, session.track, cur.lessonId);
+    if (dest.kind === 'lesson' || dest.kind === 'menu') return goTo(session, content, dest.id);
+    if (dest.kind === 'quiz') {
+      return goTo(session, content, session.track === 'youth' ? 'YOUTH_QUIZ' : 'ADULT_QUIZ');
+    }
+    return goTo(session, content, 'HOME');
+  }
+  if (text === '0' || cmd === 'BACK') return goTo(session, content, node.parent || 'MAIN');
   const badge = content.strings.completionBadge.replace('{{lesson}}', node.title);
   return out(session, [content.strings.unrecognised, badge]);
+}
+
+// Where "Continue" goes after finishing a lesson: the next lesson in the same
+// module; or, if that was the module's last lesson, the NEXT module's menu (to
+// pick a new topic); or, after the final module, the track quiz.
+function nextAfterLesson(content, track, lessonId) {
+  const modules = curriculum.modulesForTrack(content, track);
+  const mi = modules.findIndex((m) => m.lessonIds.includes(lessonId));
+  if (mi === -1) return { kind: 'home' };
+  const mod = modules[mi];
+  const li = mod.lessonIds.indexOf(lessonId);
+  if (li < mod.lessonIds.length - 1) return { kind: 'lesson', id: mod.lessonIds[li + 1] };
+  if (mi < modules.length - 1) return { kind: 'menu', id: modules[mi + 1].id };
+  return { kind: 'quiz' };
 }
 
 // ── Info pages ────────────────────────────────────────────────────────────────
 function handleInfo(session, content, cur, text) {
   const node = content.nodes[cur.id];
-  if (text === '0') return goTo(session, content, (node && node.back) || 'HOME');
+  if (text === '0' || text.toUpperCase() === 'BACK') return goTo(session, content, (node && node.back) || 'MAIN');
   return out(session, [...node.messages, infoFooter(content)]);
 }
 
 // ── Glossary ─────────────────────────────────────────────────────────────────
 function handleGlossary(session, content, text) {
   const g = content.glossary;
-  if (text === '0') return goTo(session, content, g.back || 'HOME');
+  if (text === '0' || text.toUpperCase() === 'BACK') return goTo(session, content, g.back || 'MAIN');
   const term = g.terms.find((t) => t.input === text);
   if (!term) return out(session, [content.strings.unrecognised, renderGlossary(g)]);
   return out(session, [`*${term.label}*\n${term.definition}\n\n${content.strings.ui.glossaryMore}`]);
@@ -371,7 +409,7 @@ function handleGlossary(session, content, text) {
 
 // ── Language ─────────────────────────────────────────────────────────────────
 function handleLanguageMenu(session, content, text) {
-  if (text === '0') return goTo(session, content, 'HOME');
+  if (text === '0' || text.toUpperCase() === 'BACK') return goTo(session, content, 'HOME');
   const choice = LANGUAGE_CHOICES.find((c) => c.input === text);
   if (!choice) return out(session, [content.strings.unrecognised, renderLanguageMenu(content)]);
   session.lang = choice.code;
@@ -582,7 +620,7 @@ function lessonPage(content, node, index) {
   const card = typeof raw === 'string' ? { text: raw } : raw;
   const isLast = index === node.messages.length - 1;
   const nav = isLast
-    ? 'Reply NEXT to finish, 0 to go back, or MENU'
+    ? 'Reply NEXT to finish, 0 to go back, or MENU for the main menu'
     : content.strings.lessonNav;
   const counter = `(${index + 1} of ${node.messages.length})`;
   return { text: `${card.text}\n\n${counter} · ${nav}`, image: card.image };
@@ -639,25 +677,25 @@ function deriveActions(session, content) {
     case 'home':
       if (!session.track) return [act('🧒 Youth', '1'), act('🧑 Adult', '2'), act('🔎 Explore', '3')];
       // 3 tappable reply buttons (the rest of the options stay in the numbered text).
-      return [act('▶️ Start', '1'), act('📊 Progress', '2'), act('📚 Topics', '3')];
+      return [act('▶️ Start', '1'), act('📊 Progress', '2'), act('🏠 Menu', '3')];
     case 'progress':
-      return [act('🏠 Home', 'MENU')];
+      return [act('🏠 Menu', 'MENU')];
     case 'menu': {
       const node = content.nodes[cur.id];
       return node ? node.options.map((o) => act(shortLabel(o.label), o.input)) : [];
     }
     case 'lesson':
-      return [act('Next ➡️', 'NEXT'), act('🔙 Back', '0'), act('🏠 Home', 'MENU')];
+      return [act('Next ➡️', 'NEXT'), act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];
     case 'check': {
       const check = content.checks[cur.lessonId];
       return Object.keys(check.options).map((k) => act(k, k)).concat(act('Skip', 'SKIP'));
     }
     case 'completion':
-      return [act('➡️ Next lesson', '1'), act('📚 Module menu', '0'), act('🏠 Home', 'MENU')];
+      return [act('➡️ Continue', '1'), act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];
     case 'info':
-      return [act('🔙 Back', '0'), act('🏠 Home', 'MENU')];
+      return [act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];
     case 'glossary':
-      return [act('🔙 Back', '0')];
+      return [act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];
     case 'language':
       return [act('English', '1'), act('Amharic', '2'), act('Afaan Oromo', '3'), act('🔙 Back', '0')];
     case 'quiz':

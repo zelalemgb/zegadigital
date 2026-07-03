@@ -34,8 +34,8 @@ module.exports = {
       'A few quick tips:',
       '',
       '• Reply with a number to choose an option.',
-      '• Reply 0 to go back one step.',
-      '• Type MENU anytime for the home screen.',
+      '• Reply 0 (or BACK) to go back one step.',
+      '• Type MENU anytime for the main menu.',
       '• Type PROGRESS to see your profile, or LANGUAGE to switch language.',
       '• Type STOP to exit.',
       '',
@@ -68,7 +68,7 @@ module.exports = {
     ].join('\n'),
 
     // Navigation footer appended to each lesson message page.
-    lessonNav: 'Reply NEXT to continue, 0 to go back, or MENU for home',
+    lessonNav: 'Reply NEXT to continue, 0 to go back, or MENU for the main menu',
 
     // Dynamic-screen strings (mission, progress, quiz, rewards). {{...}} are
     // filled at render time. Translated per language; English is the fallback.
@@ -90,10 +90,10 @@ module.exports = {
       optStartLesson: "1  Start today's lesson",
       optStartQuiz: '1  Take the track quiz',
       optProgress: '2  My progress & badges',
-      optBrowse: '3  Browse all topics',
+      optBrowse: '3  Main menu (switch track)',
       optQuiz: '4  Take a quiz',
       optLanguage: '5  Change language',
-      optMore: '6  More (glossary, help, about)',
+      optMore: '6  Browse all topics',
       statLine: 'Level: {{level}} · {{points}} points · {{streak}} · {{done}}/{{total}} lessons',
       streakDays: '{{n}}-day streak',
       streakNone: 'no streak yet',

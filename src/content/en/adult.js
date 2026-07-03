@@ -24,7 +24,7 @@ module.exports = {
       { input: '4', label: '4️⃣ 🛡️ Youth Online Safety & Wellbeing', next: 'adult.youthsafety' },
       { input: '5', label: '5️⃣ ✨ AI Literacy', next: 'adult.ai' },
       { input: '6', label: '6️⃣ 🧠 Quiz', next: 'ADULT_QUIZ' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
 
@@ -35,7 +35,7 @@ module.exports = {
     body: 'Think critically about the information you consume and share online.\n\n👉 Please choose a topic:',
     options: [
       { input: '1', label: '1️⃣ 🌐 Media Literacy, Online Identity & Reputation', next: 'adult.media.identity' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'adult.media.identity': {
@@ -63,7 +63,7 @@ module.exports = {
       { input: '1', label: '1️⃣ 🧾 Protecting Individual Privacy', next: 'adult.privacy.protecting' },
       { input: '2', label: '2️⃣ ⚙️ Managing Personal Information', next: 'adult.privacy.managing' },
       { input: '3', label: '3️⃣ 🧍 Online Identity & Reputation', next: 'adult.privacy.identity' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'adult.privacy.protecting': {
@@ -116,7 +116,7 @@ module.exports = {
       { input: '1', label: '1️⃣ 📱 Managing Personal Security', next: 'adult.security.personal' },
       { input: '2', label: '2️⃣ 🌐 Managing Online Accounts', next: 'adult.security.accounts' },
       { input: '3', label: '3️⃣ 🚨 Managing Compromised Accounts', next: 'adult.security.compromised' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'adult.security.personal': {
@@ -171,7 +171,7 @@ module.exports = {
       { input: '2', label: '2️⃣ 🎛️ Options for Controlling Experience', next: 'adult.youthsafety.control' },
       { input: '3', label: '3️⃣ 👨‍👩‍👧 Parental Supervision', next: 'adult.youthsafety.parental' },
       { input: '4', label: '4️⃣ 🪪 Age Assurance', next: 'adult.youthsafety.age' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'adult.youthsafety.time': {
@@ -236,7 +236,7 @@ module.exports = {
       { input: '3', label: '3️⃣ 🛠️ Using AI as a Practical Tool', next: 'adult.ai.practical' },
       { input: '4', label: '4️⃣ 🔒 AI Safety and Protection', next: 'adult.ai.safety' },
       { input: '5', label: '5️⃣ 🌍 AI and Your Future', next: 'adult.ai.future' },
-      { input: '0', label: '0️⃣ 🔙 Back to Main Menu', next: 'MAIN' },
+      { input: '0', label: '0️⃣ 🔙 Back', next: 'MAIN' },
     ],
   },
   'adult.ai.understanding': {

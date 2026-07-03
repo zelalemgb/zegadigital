@@ -11,7 +11,23 @@
  */
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const sharp = require('sharp');
+
+// Optional partner (Meta) logo. Drop the official asset at
+// public/img/meta-logo.png (or .svg) and it appears in the issuing-partners
+// area. Absent → the certificate falls back to the text credit. Read fresh each
+// render (rare) so a newly-added file shows after the next deploy/restart.
+const LOGO_DIR = path.join(__dirname, '..', 'public', 'img');
+function partnerLogoDataUri() {
+  for (const [file, mime] of [['meta-logo.png', 'image/png'], ['meta-logo.svg', 'image/svg+xml']]) {
+    try {
+      return `data:${mime};base64,${fs.readFileSync(path.join(LOGO_DIR, file)).toString('base64')}`;
+    } catch { /* not present — try next */ }
+  }
+  return null;
+}
 
 // Crockford-ish alphabet — no 0/O/1/I/L to keep codes easy to read aloud.
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -44,7 +60,7 @@ function esc(s) {
 const SERIF = "'DejaVu Serif', Georgia, 'Times New Roman', serif";
 const SANS = "'DejaVu Sans', 'Helvetica Neue', Arial, sans-serif";
 
-function certificateSvg(cert, host) {
+function certificateSvg(cert, host, metaLogo) {
   const name = esc((cert.name || 'Learner').slice(0, 48));
   const track = esc(trackLabel(cert.track));
   const date = esc(formatDate(cert.issued_at));
@@ -75,7 +91,7 @@ function certificateSvg(cert, host) {
   <text x="600" y="582" text-anchor="middle" font-family="${SANS}" font-size="22" fill="#3a4763">and passed the final assessment.</text>
 
   <!-- gold seal -->
-  <g transform="translate(600,676)">
+  <g transform="translate(600,644)">
     <path d="M-14 6 L-22 44 L0 33 L22 44 L14 6 Z" fill="#d99a1c"/>
     <circle cx="0" cy="0" r="34" fill="#f5b731"/>
     <circle cx="0" cy="0" r="34" fill="none" stroke="#c9860f" stroke-width="2"/>
@@ -83,18 +99,20 @@ function certificateSvg(cert, host) {
     <path d="M0 -17 l5 10 11 1.6 -8 7.6 2 11 -10 -5.6 -10 5.6 2 -11 -8 -7.6 11 -1.6 Z" fill="#ffffff"/>
   </g>
 
-  <text x="230" y="756" text-anchor="middle" font-family="${SANS}" font-size="18" font-weight="700" fill="#12203b">OMNI Ethiopia &amp; Meta</text>
-  <text x="230" y="780" text-anchor="middle" font-family="${SANS}" font-size="14" fill="#5c6b86">Issuing partners</text>
+  <!-- issuing partners (Meta logo shown when the asset is present) -->
+  ${metaLogo ? `<image x="163" y="700" width="134" height="40" preserveAspectRatio="xMidYMid meet" href="${metaLogo}"/>` : ''}
+  <text x="230" y="${metaLogo ? 766 : 758}" text-anchor="middle" font-family="${SANS}" font-size="18" font-weight="700" fill="#12203b">OMNI Ethiopia &amp; Meta</text>
+  <text x="230" y="${metaLogo ? 788 : 780}" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#5c6b86">Issuing partners</text>
 
-  <text x="970" y="756" text-anchor="middle" font-family="${SANS}" font-size="18" font-weight="700" fill="#12203b">${date}</text>
-  <text x="970" y="780" text-anchor="middle" font-family="${SANS}" font-size="14" fill="#5c6b86">Date issued</text>
+  <text x="970" y="${metaLogo ? 766 : 758}" text-anchor="middle" font-family="${SANS}" font-size="18" font-weight="700" fill="#12203b">${date}</text>
+  <text x="970" y="${metaLogo ? 788 : 780}" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#5c6b86">Date issued</text>
 
-  <text x="600" y="800" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#8a94a8">Certificate ${code} · verify at ${esc(verify)}</text>
+  <text x="600" y="810" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#8a94a8">Certificate ${code} · verify at ${esc(verify)}</text>
 </svg>`;
 }
 
 async function renderPng(cert, host) {
-  return sharp(Buffer.from(certificateSvg(cert, host))).png().toBuffer();
+  return sharp(Buffer.from(certificateSvg(cert, host, partnerLogoDataUri()))).png().toBuffer();
 }
 
 function verifyHtml(cert, host) {

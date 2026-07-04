@@ -645,9 +645,7 @@ function lessonPage(content, node, index) {
   const raw = node.messages[index];
   const card = typeof raw === 'string' ? { text: raw } : raw;
   const isLast = index === node.messages.length - 1;
-  const nav = isLast
-    ? 'Reply NEXT to finish, 0 to go back, or MENU for the main menu'
-    : content.strings.lessonNav;
+  const nav = isLast ? content.strings.lessonNavLast : content.strings.lessonNav;
   const counter = `(${index + 1} of ${node.messages.length})`;
   return { text: `${card.text}\n\n${counter} · ${nav}`, image: card.image };
 }

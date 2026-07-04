@@ -1,0 +1,208 @@
+{
+ "nodes": {
+  "youth.foundations": {
+   "title": "🌐 Utubaawwan Dijiitaalaa",
+   "body": "Bu’uuraalee addunyaa toora interneetii hubachuudhaan odeeffannoo dhuunfaa keetii akkamitti akka eeggattu bari.",
+   "options": [
+    {
+     "label": "🔐 Seensa icciitii dhuunfaa"
+    },
+    {
+     "label": "👤 Icciitii dhuunfaafi Si’i"
+    },
+    {
+     "label": "🔑 Jechoota-darbiinsaa icciitii"
+    },
+    {
+     "label": "⚠️ Nageenya Saayibarii, Gowwoomsaafi Odeeffannoo Hinbarbaachifne"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "youth.wellness": {
+   "title": "💚 Gaarummaa Dijitaalaa",
+   "body": "Jireenya toora interneetii gaarii ta’e ijaaruun nageenya kee tikfadhu.",
+   "options": [
+    {
+     "label": "⭐ Maqaa Interneetii irratti"
+    },
+    {
+     "label": "📱 Miidiyaalee Hawaasummaafi Qooduu"
+    },
+    {
+     "label": "🧍 toora interneetii irratti Argamuu"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "youth.engagement": {
+   "title": "🤝 Hirmaannaa Dijitaalaa",
+   "body": "namoota interneetii irratti wal qunnamuu waliin kabajaan hariiroo fayya qabeessa tolfadhu.",
+   "options": [
+    {
+     "label": "🤝 Kabajaafi Daangaawwan"
+    },
+    {
+     "label": "❤️ Toora Interneetii irratti Hariiroowwan Gaarii Qabaachuu"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "youth.opportunities": {
+   "title": "💻 Carraawwan Dijiitaalaa",
+   "body": "Teekinooloojiiwwan muuxannoo toora interneetii irratti qabdu duuba jiran hubachuu",
+   "options": [
+    {
+     "label": "🤖 Miidiyaa Hawaasaafi Algoriizimii"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "youth.safety": {
+   "title": "🛡️ Nageenyaafi Gaarummaa Dargaggootaa Toora Interneetii Irratti",
+   "body": "Yeroo fi muuxannoo miidiyaa hawaasaa irratti qabdu too'adhu.",
+   "options": [
+    {
+     "label": "⏱️ Inistaagiraamii irratti Yerootti Fayyadamuu"
+    },
+    {
+     "label": "🎛️ Muuxannoo Kee Too’achuu (Inistaagiraamii, fb, Miiseenjerii, WaatisAappii)"
+    },
+    {
+     "label": "👶 Muuxannoowwan Umuriin Walsimatan"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "youth.ai": {
+   "title": "🤖 Hubannoo AI (Namtolchee)",
+   "body": "Bu’uuraalee AI baradhu; AI’iin uumuu; akkasumas addunyaa AI keessa nagaadhan turi.",
+   "options": [
+    {
+     "label": "🔎 Hubannoo AI"
+    },
+    {
+     "label": "🕵️ Qabiyyee AI’iin Qophaa’an Adda Baasuu"
+    },
+    {
+     "label": "🎨 AI’iin Uumuu"
+    },
+    {
+     "label": "⚠️ Naamusaafi Nageenya AI"
+    },
+    {
+     "label": "🔒 AI waliin Nageenyaan Turuu"
+    },
+    {
+     "label": "🤖 AI fi Fuulduree Kee"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "adult.media": {
+   "title": "📰 Beekumsa Bu’uuraa Waayee Miidiyaa",
+   "body": "Waayee odeeffannoo fayyadamtuufi yaada interneetii irratti qooddu dursiitii itti yaadi.",
+   "options": [
+    {
+     "label": "🌐 Beekumsa Bu’uuraa Waayee Miidiyaa, Eenyummaa fi Maqaa Toora Interneetii"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "adult.privacy": {
+   "title": "🔐 Icciitii Dhuunfaa",
+   "body": "Odeeffannoo icciitii keetii eeguun iccitii namoota biroo kabaji.",
+   "options": [
+    {
+     "label": "🧾 Icciitii Dhuunfaa Keetii Eeggadhu"
+    },
+    {
+     "label": "⚙️ Odeeffannoo Dhuunfaa Too’adhu"
+    },
+    {
+     "label": "🧍 Eenyummaa fi Maqaa Toora Interneetii"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "adult.security": {
+   "title": "🛡️Nageenya Intarneetii",
+   "body": "Meeshaalee fi akkaawuntota kee miidhaa irraa eegii",
+   "options": [
+    {
+     "label": "📱 Nageenya Dhuunfaa To’achuu"
+    },
+    {
+     "label": "🌐 Akkaawuntota Intarneetii To’achuu"
+    },
+    {
+     "label": "🚨 Akkaawuntota Miidhamaan Bulchuu"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "adult.youthsafety": {
+   "title": "💚 Nageenya fi fayyina interneetii irratti",
+   "body": "Addunyaa dijitaalaa keessatti of keessaa jechuun socho’i; of eeggannoodhaan wal qunnami.",
+   "options": [
+    {
+     "label": "⏱️Yeroo Instagram irratti dabarsu to’achuu"
+    },
+    {
+     "label": "🎛️ Muuxannoo to’achuuf filannoowwan"
+    },
+    {
+     "label": "👨‍👩‍👧 To’annoo maatii / hordoffii warraa"
+    },
+    {
+     "label": "🪪 Mirkaneessa umurii"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  },
+  "adult.ai": {
+   "title": "✨ Hubannoo AI (Namtolchee)",
+   "body": "AI Hubadhuu jireenya guyyuufi jireenya ogummaa kee keessatti nagaan itti fayyadami.",
+   "options": [
+    {
+     "label": "🌐 AI hubachuufi waliin hojjachuu"
+    },
+    {
+     "label": "🕵️ Qabiyyee AI’iin Maddisiifame Qalbeeffachuu"
+    },
+    {
+     "label": "🛠️ AI akka meeshaa qabatamaatti fayyadamuu"
+    },
+    {
+     "label": "🔒 Nageenyaafi Eegumsa AI"
+    },
+    {
+     "label": "🌍 AI fi Fuulduree Kee"
+    },
+    {
+     "label": "🔙 Deebi'i"
+    }
+   ]
+  }
+ }
+}

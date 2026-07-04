@@ -17,6 +17,8 @@ const quiz = require('./quiz.json');
 // Translated lesson bodies (scripts/parse_lessons.py). Overrides `messages` only;
 // all other lesson fields (checks, next, title) fall back to English.
 const lessons = require('./lessons.json');
+// Translated module submenus — title/body/lesson labels (scripts/parse_menus.py).
+const menus = require('./menus.json');
 
 module.exports = {
   meta: { code: 'am', name: 'Amharic', complete: false },
@@ -89,6 +91,7 @@ module.exports = {
     ].join('\n'),
 
     lessonNav: 'ለመቀጠል NEXT ይላኩ፣ ወደኋላ ለመመለስ 0፣ ወይም ወደ ዋና ማውጫ MENU',
+    lessonNavLast: 'ለመጨረስ NEXT ይላኩ፣ ወደኋላ ለመመለስ 0፣ ወይም ወደ ዋና ማውጫ MENU',
 
     ui: {
       levelNames: ['ጀማሪ', 'ተማሪ', 'ብቁ', 'ጠባቂ', 'ባለሙያ'],
@@ -191,6 +194,7 @@ module.exports = {
   },
 
   nodes: {
+    ...menus.nodes,
     ...lessons.nodes,
     MAIN: {
       title: '🏠 ዋና ማውጫ',
@@ -261,6 +265,50 @@ module.exports = {
           '⚖️ ገለልተኝነት፡ ያለፖለቲካ አድልዎ እውነተኛ እና ሚዛናዊ መረጃ ማቅረብ።',
           '🔒 ግላዊነት፡ ይህ ቦት የግል ውይይቶችዎን አያከማችም።',
           '📧 አድራሻ፡ zegadigital00@gmail.com',
+        ].join('\n'),
+      ],
+    },
+
+    // Help & Resources sub-pages (URLs kept; instructions translated).
+    'help.report': {
+      messages: [
+        [
+          '📞 በ Meta መድረኮች ላይ ይዘት ሪፖርት ለማድረግ፡',
+          'Facebook: facebook.com/help',
+          'Instagram: instagram.com/support',
+          'WhatsApp: Settings → Help → Contact Us',
+          '',
+          'ሁሉም ሪፖርቶች ሚስጥራዊ ሲሆኑ በደህንነት ቡድኖች 24/7 ይገመገማሉ።',
+        ].join('\n'),
+      ],
+    },
+    'help.hacked': {
+      messages: [
+        [
+          '🔒 አካውንትዎ ከተጠለፈ፡',
+          '',
+          'Facebook: facebook.com/hacked',
+          'Instagram: help.instagram.com',
+          'WhatsApp: faq.whatsapp.com (WhatsApp Help)',
+          '',
+          'ፈጣን ይሁኑ — ቶሎ ባሳወቁ ቁጥር የተሻለ ነው።',
+        ].join('\n'),
+      ],
+    },
+    'help.resources': {
+      messages: [
+        [
+          '🔗 ተጨማሪ የመማሪያ መርጃዎች፡',
+          '• Home Page — MyDigitalWorld (SSA): mydigitalworld.fb.com/ssa',
+          '• Community Standards | Transparency Centre: transparency.fb.com',
+          '• Family Center | Meta: familycenter.meta.com',
+          '• Facebook Safety Center: facebook.com/safety',
+          '• Instagram Safety: about.instagram.com/safety',
+          '• WhatsApp Security: whatsapp.com/security',
+          '• Facebook Help Center: facebook.com/help',
+          '• Instagram Help Center: help.instagram.com',
+          '• WhatsApp Help Center: faq.whatsapp.com',
+          '• ConnectSafely: connectsafely.org',
         ].join('\n'),
       ],
     },

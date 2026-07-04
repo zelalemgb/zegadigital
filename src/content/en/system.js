@@ -69,6 +69,7 @@ module.exports = {
 
     // Navigation footer appended to each lesson message page.
     lessonNav: 'Reply NEXT to continue, 0 to go back, or MENU for the main menu',
+    lessonNavLast: 'Reply NEXT to finish, 0 to go back, or MENU for the main menu',
 
     // Dynamic-screen strings (mission, progress, quiz, rewards). {{...}} are
     // filled at render time. Translated per language; English is the fallback.

@@ -17,6 +17,8 @@ const quiz = require('./quiz.json');
 // Translated lesson bodies (scripts/parse_lessons.py). Overrides `messages` only;
 // all other lesson fields (checks, next, title) fall back to English.
 const lessons = require('./lessons.json');
+// Translated module submenus — title/body/lesson labels (scripts/parse_menus.py).
+const menus = require('./menus.json');
 
 module.exports = {
   meta: { code: 'om', name: 'Afaan Oromo', complete: false },
@@ -89,6 +91,7 @@ module.exports = {
     ].join('\n'),
 
     lessonNav: 'Itti fufuuf NEXT, duubatti deebi’uuf 0, ykn Menuu Ijootiif MENU jedhi',
+    lessonNavLast: 'Xumuruuf NEXT, duubatti deebi’uuf 0, ykn Menuu Ijootiif MENU jedhi',
 
     ui: {
       levelNames: ['Jalqabaa', 'Barataa', 'Dandeettii', 'Eegduu', 'Ogeessa'],
@@ -191,6 +194,7 @@ module.exports = {
   },
 
   nodes: {
+    ...menus.nodes,
     ...lessons.nodes,
     MAIN: {
       title: '🏠 Menuu Ijoo',
@@ -261,6 +265,50 @@ module.exports = {
           '⚖️ Gartummaarraa bilisa ta’uu: Odeeffannoo haqaa, madaalawaa ta’eefi loogii siyaasaa hin qabne.',
           '🔒 Icciitii dhuunfaa: Robotiin kuni haasawaa dhuunfaa keetii hin kuusu.',
           '📧 Quunnamtii: zegadigital00@gmail.com',
+        ].join('\n'),
+      ],
+    },
+
+    // Help & Resources sub-pages (URLs kept; instructions translated).
+    'help.report': {
+      messages: [
+        [
+          '📞 Waltajjiiwwan Meta irratti qabiyyee gabaasuuf:',
+          'Facebook: facebook.com/help',
+          'Instagram: instagram.com/support',
+          'WhatsApp: Settings → Help → Contact Us',
+          '',
+          'Gabaasni hundi iccitiidhaan kan eegamu yoo ta’u, garee nageenyaatiin 24/7 sakatta’a.',
+        ].join('\n'),
+      ],
+    },
+    'help.hacked': {
+      messages: [
+        [
+          '🔒 Akkaawuntiin kee yoo miidhame (hack):',
+          '',
+          'Facebook: facebook.com/hacked',
+          'Instagram: help.instagram.com',
+          'WhatsApp: faq.whatsapp.com (WhatsApp Help)',
+          '',
+          'Saffisi — dafteetii yoo gabaaste, wayya.',
+        ].join('\n'),
+      ],
+    },
+    'help.resources': {
+      messages: [
+        [
+          '🔗 Meeshaalee barnootaa dabalataa:',
+          '• Home Page — MyDigitalWorld (SSA): mydigitalworld.fb.com/ssa',
+          '• Community Standards | Transparency Centre: transparency.fb.com',
+          '• Family Center | Meta: familycenter.meta.com',
+          '• Facebook Safety Center: facebook.com/safety',
+          '• Instagram Safety: about.instagram.com/safety',
+          '• WhatsApp Security: whatsapp.com/security',
+          '• Facebook Help Center: facebook.com/help',
+          '• Instagram Help Center: help.instagram.com',
+          '• WhatsApp Help Center: faq.whatsapp.com',
+          '• ConnectSafely: connectsafely.org',
         ].join('\n'),
       ],
     },

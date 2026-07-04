@@ -19,6 +19,8 @@ const quiz = require('./quiz.json');
 const lessons = require('./lessons.json');
 // Translated module submenus — title/body/lesson labels (scripts/parse_menus.py).
 const menus = require('./menus.json');
+// Translated post-lesson checks (q / options / reinforce; `answer` stays English).
+const checks = require('./checks.json');
 
 module.exports = {
   meta: { code: 'am', name: 'Amharic', complete: false },
@@ -192,6 +194,8 @@ module.exports = {
       { label: 'አፕስታንደር', definition: 'ኦንላይን መጥፎ ባህሪ ሲመለከት ዝም ብሎ ከማለፍ ይልቅ አውንታዊ እርምጃ የሚወስድ ሰው።' },
     ],
   },
+
+  checks,
 
   nodes: {
     ...menus.nodes,

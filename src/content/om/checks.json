@@ -1,0 +1,177 @@
+{
+ "youth.foundations.privacy-intro": {
+  "q": "Icciitiin dhuunfaa haala gaariidhaan kan ibsamu akkamitti?",
+  "options": { "A": "Waan hunda dhoksuu", "B": "Eenyu waa’ee kee maal akka beeku to’achuu", "C": "Gonkumaa toora interneetii irratti waa maxxansuu dhiisuu" },
+  "reinforce": "Icciitiin dhuunfaa waa’ee to’annoo malee waa’ee dhoksuu miti."
+ },
+ "youth.foundations.privacy-you": {
+  "q": "Toora interneetii irratti waa qooduu kee dura irra caalaa waan yaaduu qabdu…",
+  "options": { "A": "Hordoftoota kee — eenyu arguu danda’a", "B": "Emoojii meeqa akka fayyadamtu", "C": "Sa’aatii guyyaa" },
+  "reinforce": "Yeroo hunda hordoftoota keefi maaliif odeeffannoo sana akka barbaadan yaadi."
+ },
+ "youth.foundations.passwords": {
+  "q": "Kamtu jecha-darbiinsaa (password) cimaa ta’a?",
+  "options": { "A": "Guyyaa dhaloota kee", "B": "Gaalee jecha 4 (passphrase)", "C": "12345" },
+  "reinforce": "Dheerinni walxaxaa caala — gaaleewwan jechaa cimoofi yaadatamoodha."
+ },
+ "youth.foundations.cyber": {
+  "q": "Ergaan tokko 'Amma tarkaanfii fudhadhu yookaan akkaawuntii kee dhabda!' jedha. Kun mallattoo…",
+  "options": { "A": "Akeekkachiisa amanamaa", "B": "mallattoo balaa phishing", "C": "haaromsa sooftiweerii" },
+  "reinforce": "Ariifachuufi sodaan tooftaa phishing beekamoodha."
+ },
+ "youth.wellness.reputation": {
+  "q": "Waa tokko hiriyoota keef erga maxxansitee booda…",
+  "options": { "A": "Hiriyoota qofaan argama", "B": "Qoodinsaan hordoftoota baay’ee bal’aa bira ga’uu danda’a", "C": "Gonkumaa screenshot ta’uu hin danda’u" },
+  "reinforce": "Akka waan hordoftoota bal’aan arguu danda’anitti maxxansi."
+ },
+ "youth.wellness.social": {
+  "q": "Waa’ee toora interneetii irratti qooduu dhugaan ijoo tokko…",
+  "options": { "A": "Erga qoodamee booda deebisuun ni ulfaata", "B": "Haquun garagalcha hunda balleessa", "C": "Maxxansi dhuunfaa gonkumaa hin faca’u" },
+  "reinforce": "Osoo hin maxxansin dura yaadi — qooduun deebisuun ulfaataadha."
+ },
+ "youth.wellness.presence": {
+  "q": "Namni tokko maxxansa hin jaallanne irratti maqaa kee yoo waame (tag), gochuu kan dandeessu…",
+  "options": { "A": "Homaa, harka kee keessaa bahee jira", "B": "Tag of irraa kaasuufi gabaasuu", "C": "Akkaawuntii kee haquu qofa" },
+  "reinforce": "Humna hin dhabne — tag kaasi, akka kaafamu gaafadhu, gabaasi yookaan block godhi."
+ },
+ "youth.engagement.respect": {
+  "q": "Suuraa hiriyaa keetii osoo hin maxxansin dura…",
+  "options": { "A": "Duraan dursii hayyama isaanii gaafadhu", "B": "Maxxansiitii ergasii gaafadhu", "C": "Ibsa qoosaa itti dabali" },
+  "reinforce": "Toora interneetii irratti daangaa kabajuun amantaa ijaara."
+ },
+ "youth.engagement.relationships": {
+  "q": "'Nama ejjannoo' (upstander) jechuun nama…",
+  "options": { "A": "Amala gadhee cal'isee ilaalu", "B": "Gargaaruuf tarkaanfii gaarii fudhatu", "C": "Qoosaa keessatti hirmaatu" },
+  "reinforce": "Nama ejjannoo ta’i: nama miidhame deggeriitii miidhaa gabaasi."
+ },
+ "youth.opportunities.algorithms": {
+  "q": "Algoriizimiin miidiyaa hawaasaa kan murteessu…",
+  "options": { "A": "Amala kee irratti hundaa’ee maaltu feed kee irratti akka mul’atu", "B": "Cimina jecha-darbiinsaa kee", "C": "Hiriyoonni kee eenyu akka ta’an" },
+  "reinforce": "Algoriizimiin 'echo chamber' uumuu danda’a — beekumsaan filadhu."
+ },
+ "youth.safety.time": {
+  "q": "Erga scroll gootee booda akka boqottu meeshaan Instagram kam si yaadachiisa?",
+  "options": { "A": "Take a Break", "B": "Boomerang", "C": "Reels" },
+  "reinforce": "Beekumsaan ta’uuf Activity Dashboard, Reminders fi Take a Break fayyadami."
+ },
+ "youth.safety.control": {
+  "q": "Nama tokko utuu hin beeksisin calluma jettee daangessuuf kan fayyadamtu…",
+  "options": { "A": "Restrict", "B": "Maxxansa ifaa (public)", "C": "Akkaawuntii haaraa" },
+  "reinforce": "Restrict, Mute, Block fi Report to’annoo si harka kaa’u."
+ },
+ "youth.safety.age": {
+  "q": "Umriin kee waggaa 16 gadi yoo ta’eefi Instagram irratti haaraa yoo taate, akkaawuntiin kee…",
+  "options": { "A": "Durtiidhaan ifaa (public) dha", "B": "Durtiidhaan dhuunfaa (private) dha", "C": "Meta’n bulfama" },
+  "reinforce": "Akkaawuntonni umrii 16 gadii nageenyaaf durtiidhaan dhuunfaa ta’u."
+ },
+ "youth.ai.understanding": {
+  "q": "Fakkeenya AI guyyaa guyyaa kamtu?",
+  "options": { "A": "Bilbila kee guuttachuu", "B": "YouTube viidiyoo si yaadachiisuu (recommend)", "C": "Suuraa kaasuu" },
+  "reinforce": "AI’n duraanuu yaada kennuu, hiikuufi kkf hojjeta."
+ },
+ "youth.ai.spotting": {
+  "q": "Mallattoo suuraan AI’n uumame ta’uu isaa agarsiisu…",
+  "options": { "A": "Harka adda ta’e yookaan quba dabalataa", "B": "Dafee fe’amuu isaa", "C": "Halluu qabaachuu isaa" },
+  "reinforce": "Osoo hin qoodin dura harka, duubbee, ifaafi barreeffama qori."
+ },
+ "youth.ai.creating": {
+  "q": "Ajajni (prompt) AI gaariin ifatti kan ibsu…",
+  "options": { "A": "Jecha tokko qofa", "B": "Hordoftoota, hojii, sagaleefi bal’ina", "C": "Jecha-darbiinsaa kee" },
+  "reinforce": "Ajajni hammuma ifaa ta’e, bu’aan wayyaa ta’a."
+ },
+ "youth.ai.ethics": {
+  "q": "R afran keessaa AI fayyadamuu kee ibsuu jechuun kam?",
+  "options": { "A": "Recognition (beekamtii kennuu)", "B": "Revenge (haaloo)", "C": "Refresh" },
+  "reinforce": "Respect, Responsibility, Rights, Recognition."
+ },
+ "youth.ai.safety": {
+  "q": "Taphni AI bilisaa ergaa SMS kee dubbisuuf gaafata. Gochuu kan qabdu…",
+  "options": { "A": "Hayyamuu", "B": "Diduu — kaayyoo aappichaa waliin hin deemu", "C": "Quunnamtiiwwan kees qooduu" },
+  "reinforce": "Hayyamni tokko kaayyoo aappichaa waliin yoo hin deemne, didi."
+ },
+ "youth.ai.future": {
+  "q": "Bara AI keessatti guddachuuf irra caalaa kan si barbaachisu…",
+  "options": { "A": "Waan hunda qalbeeffachuu", "B": "Yaada qeeqaafi kalaqa", "C": "Teeknooloojii hunda irraa fagaachuu" },
+  "reinforce": "Murtoon kee, kalaqni keefi aadaan kee hunda caalaa barbaachisoodha."
+ },
+ "adult.media.identity": {
+  "q": "Sirni THINK gaaffii kamiin jalqaba?",
+  "options": { "A": "Dhugaadhaa? (True)", "B": "Baramaadhaa? (Trendy)", "C": "Yeroo isaatii? (Timed)" },
+  "reinforce": "True, Helpful, Inspiring, Necessary, Kind."
+ },
+ "adult.privacy.protecting": {
+  "q": "Kamtu Odeeffannoo Eenyummaa Nama Adda Baasu (PII) dha?",
+  "options": { "A": "Halluu jaallattu", "B": "Lakkoofsa waraqaa eenyummaa mootummaa kee", "C": "Suuraa aduu dhiitu" },
+  "reinforce": "PII odeeffannoo eenyummaa kee adda baasuu danda’u kamiyyuu — eegi."
+ },
+ "adult.privacy.managing": {
+  "q": "Maxxansa yeroo hunda geo-tag gochuu balaan isaa ijoo…",
+  "options": { "A": "Daataa fayyadamuu isaa", "B": "Sochii guyyaa guyyaa keefi bakka jirtu saaxiluu isaa", "C": "Bilbila kee suuta gochuu isaa" },
+  "reinforce": "Bakka mallatteessuu (location tagging) durtiidhaan cufi."
+ },
+ "adult.privacy.identity": {
+  "q": "Maqaan kee toora interneetii irratti (reputation)…",
+  "options": { "A": "Guutummaatti si harka jira", "B": "Namoonni waan argatan akkamitti akka hiikan irratti hundaa’a", "C": "Suuraa profaayilii kee qofa" },
+  "reinforce": "Eenyummaa kee ati to’atta; maqaa kee garuu namoonni bocu."
+ },
+ "adult.security.personal": {
+  "q": "Jecha-darbiinsaa kee irratti tarkaanfii lammaffaa kan dabalu kam?",
+  "options": { "A": "Mirkaneessa Tarkaanfii Lamaa (2FA)", "B": "Maqaa fayyadamaa dheeraa", "C": "Airplane mode" },
+  "reinforce": "Bakka danda’ame hundatti 2FA banii."
+ },
+ "adult.security.accounts": {
+  "q": "Sakatta’aan nageenyaa kan of keessaa qabu…",
+  "options": { "A": "Maxxansa hunda haquu", "B": "Seensa, odeeffannoo deebii’aafi hayyama aappii sakatta’uu", "C": "Maqaa kee jijjiiruu" },
+  "reinforce": "Duraan dursii tarkaanfii fudhadhu — rakkoon hin eegin."
+ },
+ "adult.security.compromised": {
+  "q": "Akkaawuntiin kee yoo hackii ta’e, jalqaba gochuu kan qabdu…",
+  "options": { "A": "Irra deebi’uu isaa ilaaluuf eeguu", "B": "Jecha-darbiinsaa jijjiiruufi Wiirtuu Gargaarsaa quunnamuu", "C": "Steetasii akeekkachiisaa maxxansuu" },
+  "reinforce": "Daqiiqaan hundi barbaachisaadha — password jijjiiri, 2FA bani, quunnamtii beeksisi."
+ },
+ "adult.youthsafety.time": {
+  "q": "Teen Accounts Instagram irratti daangaa guyyaa durtii…",
+  "options": { "A": "Sa’aatii 1", "B": "Sa’aatii 6", "C": "Daangaa hin qabu" },
+  "reinforce": "Dargaggoonni daangaa guyyaa sa’aatii 1 irratti yaadachiisa argatu."
+ },
+ "adult.youthsafety.control": {
+  "q": "Akkaawuntonni dargaggoota xixiqqoo (13–15)…",
+  "options": { "A": "Durtiidhaan ifaa (public)", "B": "Durtiidhaan dhuunfaa (private)", "C": "Daangaa hin qaban" },
+  "reinforce": "Dargaggoonni xixiqqoon eegumsa durtii cimaa argatu."
+ },
+ "adult.youthsafety.parental": {
+  "q": "Karaa to’annoo maatii, maatiin gochuu KAN HIN DANDEENYE…",
+  "options": { "A": "Daangaa yeroo kaa’uu", "B": "Ergaa dhuunfaa (DM) dargaggichaa dubbisuu", "C": "Dargaggichi eenyu akka hordofu arguu" },
+  "reinforce": "To’annoon ergaa dhuunfaa dargaggichaa kabaja."
+ },
+ "adult.youthsafety.age": {
+  "q": "Meta’n umrii kan mirkaneessu…",
+  "options": { "A": "Selfii viidiyoo yookaan sakatta’a ID", "B": "Jecha-darbiinsaa kee", "C": "Tarree quunnamtii kee" },
+  "reinforce": "Mirkaneessi umrii dargaggoota qindaa’ina umrii-madaalawaa keessa tursa."
+ },
+ "adult.ai.understanding": {
+  "q": "Waa’ee AI adda ba’iinsi ijoo tokko inni…",
+  "options": { "A": "Akkuma namaa yaada", "B": "Akka namoonni yaadanitti 'hin yaadu'", "C": "Miira dhugaa qaba" },
+  "reinforce": "AI’n hubannoo fakkeessa malee murtoo namaa hin qabu."
+ },
+ "adult.ai.recognising": {
+  "q": "Kamtu qabiyyeen AI’n uumame ta’uu mala jedhee agarsiisa?",
+  "options": { "A": "Sagalee roobotii yookaan sochii hidhii wal hin simne", "B": "Like baay’ee qabaachuu isaa", "C": "Afaan keetiin ta’uu isaa" },
+  "reinforce": "Suuraa uumamaa hin taane, barreeffama qulqullaa’aafi sagalee roobotii of eeggadhu."
+ },
+ "adult.ai.practical": {
+  "q": "Bu’aa AI fayyadamuu kee dura yeroo hunda gochuu kan qabdu…",
+  "options": { "A": "Osoo hin dubbisin erguu", "B": "Sakatta’uufi dhuunfaa gochuu", "C": "Guutuu dha jedhee yaaduu" },
+  "reinforce": "AI’n ka’umsa kenna — itti gaafatamummaan dhumaa kan kee ti."
+ },
+ "adult.ai.safety": {
+  "q": "Meeshaa AI waliin qooduun kamtu nageenya hin qabne?",
+  "options": { "A": "Magaalaa kee", "B": "Gaaffii waliigalaa", "C": "Lakkoofsa akkaawuntii baankii kee" },
+  "reinforce": "Odeeffannoo baankii, ID yookaan suuraa nama biraa gonkumaa hin qoodin."
+ },
+ "adult.ai.future": {
+  "q": "Bara AI keessatti dandeettiin gatii guddaa qabu…",
+  "options": { "A": "Saffisaan barreessuu", "B": "Yaada qeeqaafi AI qajeelchuu", "C": "Odeeffannoo qalbeeffachuu" },
+  "reinforce": "Murtoon namaa, kalaqniifi aadaan bakka hin buufamne ta’ee itti fufa."
+ }
+}

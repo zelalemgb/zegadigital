@@ -627,13 +627,24 @@ function renderProgress(session, content) {
 }
 
 function renderMenu(content, node) {
+  const title = node.title ? `*${stripEmoji(node.title).trim()}*` : '';
   const parts = [];
-  if (node.title) parts.push(`*${stripEmoji(node.title).trim()}*`);
+  if (title) parts.push(title);
   if (node.body) parts.push('', node.body);
   // Clean labels: "1️⃣ 🌐 Digital Foundations" → "1  Digital Foundations".
   parts.push('', ...node.options.map((o) => `${o.input}  ${cleanLabel(o.label)}`));
   parts.push('', node.footer || content.strings.menuFooter);
-  return { text: parts.join('\n'), image: node.image };
+  // `list` lets richer clients (WhatsApp) render a tappable picker instead of a
+  // typed number. `body` omits the numbered options — the rows carry them.
+  const list = {
+    body: [title, node.body || ''].filter(Boolean).join('\n\n') || (node.title || 'Menu'),
+    button: content.strings.ui.listButton || 'Select',
+    rows: node.options.map((o) => {
+      const label = cleanLabel(o.label);
+      return { id: o.input, title: label, description: label.length > 24 ? label : undefined };
+    }),
+  };
+  return { text: parts.join('\n'), image: node.image, list };
 }
 
 function cleanLabel(label) {
@@ -665,19 +676,15 @@ function infoFooter(content) {
 function renderQuestion(content, quiz, index) {
   const u = content.strings.ui;
   const q = quiz.questions[index];
-  const opts = ['A', 'B', 'C', 'D']
-    .filter((k) => q.options[k] != null)
-    .map((k) => `${k}) ${q.options[k]}`)
-    .join('\n');
-  return [
-    fill(u.quizQ, { n: index + 1, total: quiz.questions.length }),
-    '',
-    q.q,
-    '',
-    opts,
-    '',
-    u.quizFooter,
-  ].join('\n');
+  const keys = ['A', 'B', 'C', 'D'].filter((k) => q.options[k] != null);
+  const header = fill(u.quizQ, { n: index + 1, total: quiz.questions.length });
+  const text = [header, '', q.q, '', keys.map((k) => `${k}) ${q.options[k]}`).join('\n'), '', u.quizFooter].join('\n');
+  const list = {
+    body: [header, q.q].join('\n\n'),
+    button: u.listButton || 'Select',
+    rows: keys.map((k) => ({ id: k, title: `${k}) ${q.options[k]}`.slice(0, 24), description: q.options[k].length > 20 ? q.options[k] : undefined })),
+  };
+  return { text, list };
 }
 
 function renderGlossary(g) {
@@ -711,8 +718,9 @@ function deriveActions(session, content) {
     case 'lesson':
       return [act('Next ➡️', 'NEXT'), act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];
     case 'check': {
+      // A/B/C as tappable reply buttons (SKIP still works if typed).
       const check = content.checks[cur.lessonId];
-      return Object.keys(check.options).map((k) => act(k, k)).concat(act('Skip', 'SKIP'));
+      return Object.keys(check.options).map((k) => act(k, k));
     }
     case 'completion':
       return [act('➡️ Continue', '1'), act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];

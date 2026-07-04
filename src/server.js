@@ -30,6 +30,11 @@ const db = require('./store/db');
 const certs = require('./certificates');
 const { startScheduler } = require('./scheduler/runner');
 
+// Safety net: never let a stray async error take the bot down mid-conversation.
+// Log it and keep serving; a single bad turn must not crash the process.
+process.on('unhandledRejection', (reason) => console.error('UnhandledRejection:', reason));
+process.on('uncaughtException', (err) => console.error('UncaughtException:', err));
+
 const app = express();
 // Capture the raw body so we can verify Meta's signature over the exact bytes.
 app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf; } }));

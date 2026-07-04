@@ -107,6 +107,7 @@ module.exports = {
       lessonLine: '{{title}} ({{module}}, ~daq. 2)',
       trackDone: 'Karaa kana xumurtan. Hojii gaarii!',
       replyNumber: '*Lakkoofsaan deebisi:*',
+      listButton: 'Filadhu',
       optStartLesson: '1  Barnoota har’aa jalqabi',
       optStartQuiz: '1  Battallee karaa fudhadhu',
       optProgress: '2  Guddina koo fi badhaasota',

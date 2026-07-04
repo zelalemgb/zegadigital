@@ -107,6 +107,7 @@ module.exports = {
       lessonLine: '{{title}} ({{module}}፣ ~2 ደቂቃ)',
       trackDone: 'ይህን ትራክ አጠናቀዋል። በጣም ጥሩ!',
       replyNumber: '*በቁጥር ይመልሱ፡*',
+      listButton: 'ይምረጡ',
       optStartLesson: '1  የዛሬውን ትምህርት ጀምር',
       optStartQuiz: '1  የትራክ ፈተና ውሰድ',
       optProgress: '2  የኔ እድገት እና ባጆች',

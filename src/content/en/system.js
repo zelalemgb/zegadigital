@@ -88,6 +88,7 @@ module.exports = {
       lessonLine: '{{title}} ({{module}}, ~2 min)',
       trackDone: "You've finished this track. Well done!",
       replyNumber: '*Reply with a number:*',
+      listButton: 'Select',
       optStartLesson: "1  Start today's lesson",
       optStartQuiz: '1  Take the track quiz',
       optProgress: '2  My progress & badges',

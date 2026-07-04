@@ -20,21 +20,46 @@ function apiUrl(path) {
   return `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/${path}`;
 }
 
-async function post(path, payload) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * POST to the Graph API with retry/backoff on transient failures (network
+ * errors, 429 rate-limits and 5xx). This is what keeps the bot responsive when
+ * a user taps quickly: a single hiccup no longer drops the reply.
+ */
+async function post(path, payload, attempt = 0) {
   if (!config.whatsapp.isConfigured) {
     throw new Error(
       'WhatsApp Cloud API is not configured. Set WHATSAPP_TOKEN and PHONE_NUMBER_ID in .env'
     );
   }
-  const res = await fetch(apiUrl(path), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${config.whatsapp.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  const MAX = 3;
+  const backoff = () => 400 * 2 ** attempt; // 400ms, 800ms, 1600ms
+
+  let res;
+  try {
+    res = await fetch(apiUrl(path), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.whatsapp.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (netErr) {
+    if (attempt < MAX) {
+      await sleep(backoff());
+      return post(path, payload, attempt + 1);
+    }
+    throw netErr;
+  }
+
   if (!res.ok) {
+    if ((res.status === 429 || res.status >= 500) && attempt < MAX) {
+      const retryAfter = parseInt(res.headers.get('retry-after') || '', 10);
+      await sleep(Number.isFinite(retryAfter) ? retryAfter * 1000 : backoff());
+      return post(path, payload, attempt + 1);
+    }
     const detail = await res.text().catch(() => '');
     throw new Error(`WhatsApp API ${res.status}: ${detail}`);
   }
@@ -177,14 +202,22 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
     const m = msgs[i];
     const text = stripEmoji(typeof m === 'string' ? m : m.text || '');
     const link = mediaUrl(m && m.image);
+    const list = m && m.list; // structured menu/quiz → tappable list picker
     const isLast = i === msgs.length - 1;
-    // eslint-disable-next-line no-await-in-loop
-    if (isLast && showButtons) {
-      await sendButtons(to, text, btns, link);
-    } else if (link) {
-      await sendImage(to, link, text);
-    } else if (text) {
-      await sendText(to, text);
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      if (isLast && actionStyle === 'list' && list && list.rows && list.rows.length) {
+        await sendList(to, stripEmoji(list.body) || text, list.button, list.rows);
+      } else if (isLast && showButtons) {
+        await sendButtons(to, text, btns, link);
+      } else if (link) {
+        await sendImage(to, link, text);
+      } else if (text) {
+        await sendText(to, text);
+      }
+    } catch (err) {
+      // One bubble failing shouldn't drop the rest of the reply.
+      console.error(`sendTurn: bubble ${i + 1}/${msgs.length} failed — continuing:`, err.message);
     }
   }
 }

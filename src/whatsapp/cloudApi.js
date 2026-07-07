@@ -207,7 +207,14 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
     try {
       // eslint-disable-next-line no-await-in-loop
       if (isLast && actionStyle === 'list' && list && list.rows && list.rows.length) {
-        await sendList(to, stripEmoji(list.body) || text, list.button, list.rows);
+        try {
+          await sendList(to, stripEmoji(list.body) || text, list.button, list.rows);
+        } catch (listErr) {
+          // A rejected list payload must never swallow the menu — fall back to
+          // the plain numbered text so the user always sees their options.
+          console.error('sendTurn: list failed, falling back to text:', listErr.message);
+          if (text) await sendText(to, text);
+        }
       } else if (isLast && showButtons) {
         await sendButtons(to, text, btns, link);
       } else if (link) {

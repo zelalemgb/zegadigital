@@ -23,6 +23,33 @@ function completeAllYouthLessons(uid) {
   for (const id of curriculum.allLessonIds(getContent('en'), 'youth')) db.markLessonComplete(uid, id);
 }
 
+test('certificate auto-prompts once on first track completion, then never nags on re-visits', () => {
+  const uid = 'cert-once';
+  const c = getContent('en');
+  const ids = curriculum.allLessonIds(c, 'youth');
+  const lastId = ids[ids.length - 1];
+  onboardYouth(uid);
+  for (const id of ids.slice(0, -1)) db.markLessonComplete(uid, id); // all but the last
+  db.logEvent(uid, 'quizFinished', { track: 'youth', passed: true, score: 15, total: 15 });
+
+  // Finish the FINAL lesson through the flow → the prompt fires exactly once.
+  runtime.processMessage(uid, '1'); // mission → start the last uncompleted lesson
+  for (let i = 0; i < c.nodes[lastId].messages.length; i++) runtime.processMessage(uid, 'NEXT');
+  const finished = runtime.processMessage(uid, c.checks[lastId].answer);
+  assert.match(joined(finished), /Congratulations|name/i, 'first completion prompts for the certificate');
+  assert.equal(db.getCertificate(uid, 'youth'), null); // not issued until named
+
+  // Skip, then RE-COMPLETE an already-finished lesson — it must NOT prompt again.
+  runtime.processMessage(uid, 'SKIP');
+  const first = ids[0];
+  runtime.processMessage(uid, '6'); // browse topics → track menu
+  runtime.processMessage(uid, '1'); // first module
+  runtime.processMessage(uid, '1'); // first lesson
+  for (let i = 0; i < c.nodes[first].messages.length; i++) runtime.processMessage(uid, 'NEXT');
+  const again = runtime.processMessage(uid, c.checks[first].answer);
+  assert.doesNotMatch(joined(again), /Congratulations|What name/i, 'no re-prompt on re-visit after a skip');
+});
+
 test('certificate is withheld until lessons are done AND the quiz is passed', () => {
   const uid = 'cert-early';
   onboardYouth(uid);

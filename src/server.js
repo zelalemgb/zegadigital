@@ -233,7 +233,12 @@ app.post('/webhook', async (req, res) => {
       const result = runtime.processMessage(m.from, input);
       await wa.sendTurn(m.from, result.messages, result.actions, result.actionStyle);
     } catch (err) {
-      console.error(`Error handling message from ${m.from}:`, err);
+      // Log the offending input, and never leave the user in silence — send a
+      // recoverable fallback so the conversation can continue.
+      console.error(`Error handling message from ${m.from} (input: ${JSON.stringify(m.text)}):`, err);
+      await wa
+        .sendText(m.from, '⚠️ Something went wrong on our side. Please reply MENU to continue.')
+        .catch(() => {});
     }
   }
 });

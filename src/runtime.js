@@ -101,8 +101,10 @@ function processMessage(userId, input, opts = {}) {
         db.logEvent(userId, 'quizFinished', ev);
         break;
       case 'lessonCompleted':
-        completedThisTurn = true;
+        // Only a genuinely NEW completion counts as progress — re-reading an
+        // already-finished lesson must not re-trigger rewards or the certificate.
         if (!completed.has(ev.lessonId)) {
+          completedThisTurn = true;
           db.markLessonComplete(userId, ev.lessonId);
           completed.add(ev.lessonId);
           profile.xp += AWARDS.lessonComplete;
@@ -244,16 +246,21 @@ function handleCertificates(userId, profile, session, content, completed, events
     return askOrIssue(userId, profile, session, content, track, msgs);
   }
 
-  // 3) Auto: crossed the finish line this turn.
-  if (justProgressed && eligible && !already) askOrIssue(userId, profile, session, content, track, msgs);
+  // 3) Auto: crossed the finish line this turn — but prompt at most once.
+  //    (After a skip, the learner can still reply CERTIFICATE to get it.)
+  if (justProgressed && eligible && !already && !db.getCertPromptedTracks(userId).has(track)) {
+    askOrIssue(userId, profile, session, content, track, msgs);
+  }
   return msgs;
 }
 
 function askOrIssue(userId, profile, session, content, track, msgs) {
-  if (profile.name) issueAndRender(userId, profile.name, track, content, msgs);
-  else {
+  if (profile.name) {
+    issueAndRender(userId, profile.name, track, content, msgs);
+  } else {
     session.cursor = { type: 'certname', track };
     msgs.push(content.strings.ui.certEarnedAskName);
+    db.logEvent(userId, 'certificatePrompted', { track }); // so we don't nag again
   }
   return msgs;
 }

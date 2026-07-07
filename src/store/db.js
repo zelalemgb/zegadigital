@@ -145,6 +145,7 @@ const stmt = {
   getCheckResults: db.prepare('SELECT lesson_id, correct FROM check_results WHERE user_id = ?'),
   setName: db.prepare('UPDATE profiles SET name = ? WHERE user_id = ?'),
   quizEvents: db.prepare("SELECT data FROM events WHERE user_id = ? AND type = 'quizFinished'"),
+  certPromptEvents: db.prepare("SELECT data FROM events WHERE user_id = ? AND type = 'certificatePrompted'"),
   insertCertificate: db.prepare(
     'INSERT OR IGNORE INTO certificates (code, user_id, name, track) VALUES (?, ?, ?, ?)'
   ),
@@ -267,6 +268,20 @@ function getPassedQuizTracks(userId) {
   return tracks;
 }
 
+/** Tracks the user has already been auto-prompted to name a certificate for. */
+function getCertPromptedTracks(userId) {
+  const tracks = new Set();
+  for (const r of stmt.certPromptEvents.all(userId)) {
+    try {
+      const d = JSON.parse(r.data);
+      if (d && d.track) tracks.add(d.track);
+    } catch {
+      /* ignore */
+    }
+  }
+  return tracks;
+}
+
 function getCertificate(userId, track) {
   return stmt.getCertByUserTrack.get(userId, track) || null;
 }
@@ -303,6 +318,7 @@ module.exports = {
   getCheckResults,
   setName,
   getPassedQuizTracks,
+  getCertPromptedTracks,
   getCertificate,
   issueCertificate,
   getCertificateByCode,

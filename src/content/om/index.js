@@ -159,6 +159,8 @@ module.exports = {
       rewardGain: 'Qabxiin kee jalqaba {{before}}% irraa gara {{after}}% amma ga’e',
       rewardGainProgress: ' — kun guddina qabxii {{delta}} ti. Hojii gaarii!',
       optInPrompt: 'Guyyaa guyyaan yaadachiisa argachuu barbaaddaa? REMIND ON jedhi (ykn sa’a 7pmf REMIND 19).',
+      liteOn: '📶 Haala data qusachuu banameera. Barnootni data qusachuuf barreeffama qofaan dhufa. Gara barnoota suuraatti deebi’uuf yeroo barbaaddetti CARDS jedhi.',
+      liteOff: '🖼️ Barnootni suuraa banameera. Barreeffama qofaatti jijjiiruun data qusachuuf yeroo barbaaddetti LITE jedhi.',
       certEarnedAskName: "🎓 *Baga gammadde!* Barnoota hunda xumurtee qormaata dabarte — waraqaa ragaa Dijitaala Zeegaa argatteetta!\n\nMaqaa isa irratti barreeffamu ergi (ykn SKIP).",
       certNameInvalid: 'Maaloo maqaa waraqaa ragaa kee irratti barreeffamu ergi (qubee 2–48), ykn SKIP.',
       certGenerating: '🎉 Gaarii, {{name}}! Waraqaan ragaa kee kunooti:',

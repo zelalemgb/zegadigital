@@ -116,6 +116,10 @@ function processMessage(userId, input, opts = {}) {
         profile.track = ev.track;
         db.logEvent(userId, 'trackSelected', { track: ev.track });
         break;
+      case 'setLite':
+        profile.lite = ev.on; // data-saver: plain-text lessons instead of cards
+        db.logEvent(userId, 'setLite', { on: ev.on });
+        break;
       case 'setReminders':
         profile.optInReminders = ev.on;
         if (ev.hour != null) profile.reminderHour = ev.hour;
@@ -207,8 +211,16 @@ function processMessage(userId, input, opts = {}) {
   // Normalise to rich bubbles { text, image? }. Engine bubbles are already
   // objects; daily/reward bubbles are plain strings.
   const toMsg = (m) => (typeof m === 'string' ? { text: m } : m);
+  // Data-saver: drop the card image from lesson bubbles so the transport sends
+  // the full plain text instead. Non-lesson images (certificate) are untouched.
+  const deCard = (m) => (profile.lite && m && m.card ? { ...m, image: undefined } : m);
   return {
-    messages: [...prepend.map(toMsg), ...result.messages, ...rewards.map(toMsg), ...certMsgs.map(toMsg)],
+    messages: [
+      ...prepend.map(toMsg),
+      ...result.messages.map(toMsg).map(deCard),
+      ...rewards.map(toMsg),
+      ...certMsgs.map(toMsg),
+    ],
     actions: result.actions,
     actionStyle: result.actionStyle,
     profile: publicProfile(profile, earnedSet.size),

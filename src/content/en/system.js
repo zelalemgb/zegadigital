@@ -146,6 +146,9 @@ module.exports = {
       rewardGain: 'Your score went from {{before}}% at the start to {{after}}% now',
       rewardGainProgress: " — that's {{delta}} points of progress. Well done!",
       optInPrompt: 'Want a daily reminder to keep your streak going? Reply REMIND ON (or REMIND 19 for a 7pm reminder).',
+      // Data-saver (lite) mode toggle
+      liteOn: '📶 Lite mode on. Lessons will come as plain text to save data. Reply CARDS anytime to switch back to picture lessons.',
+      liteOff: '🖼️ Picture lessons on. Reply LITE anytime to switch to plain text and save data.',
       // Certificate of completion
       certEarnedAskName: "🎓 *Congratulations!* You've finished every lesson and passed the quiz — you've earned your Zega Digital certificate!\n\nWhat name should we print on it? Reply with your full name (or SKIP).",
       certNameInvalid: 'Please reply with the name to print on your certificate (2–48 characters), or SKIP.',

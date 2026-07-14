@@ -123,6 +123,16 @@ function route(session, content, text, cmd) {
     emit('certificateRequest', {});
     return out(session, []);
   }
+  // Data-saver toggle: LITE serves lessons as plain text (no image cards),
+  // CARDS/FULL switches picture cards back on. Runtime persists the choice.
+  if (cmd === 'LITE' || cmd === 'DATA' || cmd === 'TEXT') {
+    emit('setLite', { on: true });
+    return goTo(session, content, 'HOME', [content.strings.ui.liteOn]);
+  }
+  if (cmd === 'CARDS' || cmd === 'FULL') {
+    emit('setLite', { on: false });
+    return goTo(session, content, 'HOME', [content.strings.ui.liteOff]);
+  }
 
   const cur = session.cursor || { type: 'home' };
   switch (cur.type) {
@@ -353,7 +363,7 @@ function handleLesson(session, content, cur, cmd) {
     return afterLesson(session, content, cur.id);
   }
   session.cursor = { type: 'lesson', id: cur.id, index: nextIndex };
-  return out(session, [lessonPage(content, node, nextIndex)]);
+  return out(session, [lessonPage(content, node, nextIndex, cur.id, session.lang)]);
 }
 
 // After the last page: run the knowledge check if the lesson has one.
@@ -555,7 +565,7 @@ function goTo(session, content, target, prefix = []) {
   }
   if (node.type === 'lesson') {
     session.cursor = { type: 'lesson', id: resolvedId, index: 0 };
-    return out(session, [...prefix, lessonPage(content, node, 0)]);
+    return out(session, [...prefix, lessonPage(content, node, 0, resolvedId, session.lang)]);
   }
   if (node.type === 'info') {
     session.cursor = { type: 'info', id: resolvedId };
@@ -670,13 +680,21 @@ function cleanLabel(label) {
 }
 
 // A lesson page may be a plain string (legacy) or a card { text, image }.
-function lessonPage(content, node, index) {
+function lessonPage(content, node, index, lessonId, lang) {
   const raw = node.messages[index];
   const card = typeof raw === 'string' ? { text: raw } : raw;
   const isLast = index === node.messages.length - 1;
   const nav = isLast ? content.strings.lessonNavLast : content.strings.lessonNav;
   const counter = `(${index + 1} of ${node.messages.length})`;
-  return { text: `${card.text}\n\n${counter} · ${nav}`, image: card.image };
+  const fullText = `${card.text}\n\n${counter} · ${nav}`;
+  // Lesson content renders as a branded card image (the hybrid model: cards for
+  // lessons, plain tappable text for menus/quizzes). `card` + `caption` let the
+  // transport show a short caption under the image, or fall back to `text` when
+  // cards are off (lite mode) or media hosting isn't configured.
+  const image = lessonId
+    ? `/card.jpg?lang=${lang || content.meta?.code || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}`
+    : card.image;
+  return { text: fullText, image, card: Boolean(lessonId), caption: `${counter} · ${nav}` };
 }
 
 function renderCheck(content, check) {

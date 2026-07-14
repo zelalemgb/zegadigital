@@ -204,6 +204,10 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
     const link = mediaUrl(m && m.image);
     const list = m && m.list; // structured menu/quiz → tappable list picker
     const isLast = i === msgs.length - 1;
+    // A lesson card already shows its content in the image, so send a short
+    // caption instead of repeating the full text. Without a card image (lite
+    // mode, or media hosting off) we fall back to the full text.
+    const body = m && m.card && link ? stripEmoji(m.caption || '') || text : text;
     try {
       // eslint-disable-next-line no-await-in-loop
       if (isLast && actionStyle === 'list' && list && list.rows && list.rows.length) {
@@ -216,9 +220,9 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
           if (text) await sendText(to, text);
         }
       } else if (isLast && showButtons) {
-        await sendButtons(to, text, btns, link);
+        await sendButtons(to, body, btns, link);
       } else if (link) {
-        await sendImage(to, link, text);
+        await sendImage(to, link, body);
       } else if (text) {
         await sendText(to, text);
       }

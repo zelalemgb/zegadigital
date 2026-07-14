@@ -62,6 +62,23 @@ function moduleOf(content, track, lessonId) {
   return modulesForTrack(content, track).find((m) => m.lessonIds.includes(lessonId)) || null;
 }
 
+/**
+ * The lesson's display name as it appears in its module menu (which IS
+ * translated in every language pack), falling back to the lesson node's own
+ * `title` (English-only) if it isn't listed. Used for lesson-card headings.
+ */
+function lessonLabel(content, lessonId) {
+  const track = lessonId.split('.')[0];
+  const mod = moduleOf(content, track, lessonId);
+  if (mod) {
+    const menu = content.nodes[mod.id];
+    const opt = menu && menu.options && menu.options.find((o) => o.next === lessonId);
+    if (opt && opt.label) return stripNumber(opt.label);
+  }
+  const node = content.nodes[lessonId];
+  return (node && node.title) || '';
+}
+
 /** Count how many distinct modules the user has touched (≥1 lesson done). */
 function modulesTouched(content, track, completedSet) {
   return modulesForTrack(content, track).filter((m) =>
@@ -80,5 +97,6 @@ module.exports = {
   nextLesson,
   trackProgress,
   moduleOf,
+  lessonLabel,
   modulesTouched,
 };

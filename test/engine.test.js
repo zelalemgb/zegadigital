@@ -114,6 +114,16 @@ test('MENU opens the main menu; HOME returns to the mission; STOP remembers the 
 // ── Navigation hierarchy (0 / BACK, MENU, next-module, mission option 3) ──────
 const toMission = ['Hi', '1', '1', 'SKIP']; // English → Youth → skip baseline → mission
 
+test('entering the other track from the main menu switches the active track', () => {
+  // Youth chosen, then browse to the Adult track via main menu → Adult Module.
+  const r = run([...toMission, '3', '2']); // mission → MAIN (opt 3) → Adult Module (opt 2)
+  assert.equal(r.session.track, 'adult');
+  assert.equal(r.session.cursor.id, 'adult.menu');
+  // Switching back to Youth restores the youth track.
+  const back = run([...toMission, '3', '2', 'MENU', '1']); // → MAIN → Youth Module
+  assert.equal(back.session.track, 'youth');
+});
+
 test('0 / BACK climbs exactly one level: lesson → module → track → main menu', () => {
   // mission → track topics (6) → Digital Foundations (1) → a lesson (1)
   const atLesson = run([...toMission, '6', '1', '1']);

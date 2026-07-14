@@ -84,7 +84,11 @@ function route(session, content, text, cmd) {
       session.lang = choice.code;
       session.awaitingLanguage = false;
       const c = getContent(session.lang);
-      return goTo(session, c, 'HOME', [c.strings.navTip]);
+      // Lead with the certificate hook (+ a preview image) to motivate, then tips.
+      return goTo(session, c, 'HOME', [
+        { text: c.strings.ui.certHookIntro, image: '/cert/sample.png' },
+        c.strings.navTip,
+      ]);
     }
     return out(session, [content.strings.onboarding]);
   }
@@ -508,6 +512,17 @@ function finishQuiz(session, content, cur, quiz, prefix) {
 
 // ── Navigation helper ────────────────────────────────────────────────────────
 function goTo(session, content, target, prefix = []) {
+  // Entering a track's menu makes that track the ACTIVE one — so browsing to the
+  // other track from the main menu actually switches you there (mission, next
+  // lesson, progress, certificate all follow). Progress is stored per lesson id
+  // (youth.* vs adult.*), so switching never loses either track's progress.
+  if (target === 'youth.menu' || target === 'adult.menu') {
+    const t = target.slice(0, target.indexOf('.'));
+    if (session.track !== t) {
+      session.track = t;
+      emit('trackSelected', { track: t });
+    }
+  }
   if (target === 'EXIT') {
     const bye = content.strings.exitMessage;
     const track = session.track;
@@ -577,6 +592,9 @@ function renderHome(session, content) {
   } else {
     lines.push(u.todaysLesson, u.trackDone, '');
   }
+  // Certificate countdown — a steady motivator toward the Meta certificate.
+  const remaining = prog.total - prog.done;
+  if (next && remaining > 0) lines.push(fill(u.certCountdown, { n: remaining }), '');
   // Options first so they stay visible (WhatsApp truncates long messages).
   lines.push(
     u.replyNumber,

@@ -154,6 +154,8 @@ module.exports = {
       certVerify: '✅ Keep this! Anyone can verify it at:\n{{url}}',
       certNotYet: '🎓 Finish every lesson in your track and pass the quiz to earn your certificate. Reply 1 to keep learning!',
       certSkipped: 'No problem — reply CERTIFICATE anytime to get your certificate.',
+      certHookIntro: '🎓 *Become a Meta-certified digital citizen!*\nFinish a track — all the lessons plus the quiz — to earn your official Zega Digital certificate, presented by OMNI Ethiopia & Meta.',
+      certCountdown: '🎓 {{n}} more lesson(s) to earn your certificate.',
     },
   },
 

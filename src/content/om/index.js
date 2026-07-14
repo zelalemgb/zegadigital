@@ -166,6 +166,8 @@ module.exports = {
       certVerify: "✅ Kana ol kaa'i! Namni kamiyyuu asitti mirkaneessuu danda'a:\n{{url}}",
       certNotYet: '🎓 Waraqaa ragaa kee argachuuf barnoota hunda xumuriitii qormaata dabarsi. Itti fufuuf 1 ergi!',
       certSkipped: "Rakkoo hin qabu — yeroo barbaadde CERTIFICATE erguun waraqaa ragaa kee argachuu dandeessa.",
+      certHookIntro: "🎓 *Lammii dijitaalaa Meta'n ragga'e ta'i!*\nKaraa tokko — barnoota hundaafi qormaata — yoo xumurte waraqaa ragaa Zega Digital OMNI Ethiopia fi Meta irraa dhihaate ni argatta.",
+      certCountdown: '🎓 Waraqaa ragaa kee argachuuf barnoonni {{n}} sitti hafe.',
     },
   },
 

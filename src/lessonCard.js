@@ -126,52 +126,55 @@ function iconCategory(text) {
 }
 
 function cardSvg(data) {
-  // Typography is sized RELATIVE to the 1080px canvas. WhatsApp scales the card
-  // down to the chat-bubble width, so the body needs to be ~50px here to render
-  // near WhatsApp's native ~16px text on a phone (37px looked tiny).
+  // Typography is sized RELATIVE to the 1080px canvas. WhatsApp shrinks the card
+  // to a fairly NARROW chat bubble on a phone, so the body must be large here
+  // (~72px) to read comfortably on-device. Cards grow tall to fit — that's the
+  // deliberate trade for legibility.
   const W = 1080;
-  const titleLines = wrap(data.title, 17);
-  const titleY = 336;
-  const titleLH = 82;
-  const accentY = titleY + (titleLines.length - 1) * titleLH + 34;
-  const bodyLines = wrap(data.body, 33);
-  const bodyY = accentY + 92;
-  const bodyLH = 70;
+  const RM = W - 72; // right margin x
+  const titleLines = wrap(data.title, 13);
+  const titleY = 358;
+  const titleLH = 100;
+  const accentY = titleY + (titleLines.length - 1) * titleLH + 44;
+  const bodyLines = wrap(data.body, 22);
+  const bodyY = accentY + 116;
+  const bodyLH = 94;
   const bodyBottom = bodyY + Math.max(0, bodyLines.length - 1) * bodyLH;
 
   let tip = '';
   let contentBottom = bodyBottom;
   if (data.tip) {
-    const tipLines = wrap(data.tip, 34);
-    const tipTop = bodyBottom + 70;
-    const tipH = tipLines.length * 62 + 116;
-    tip = `<rect x="60" y="${tipTop}" width="960" height="${tipH}" rx="24" fill="#eaf0fb" stroke="#cdddf5" stroke-width="2"/>
-      <text x="100" y="${tipTop + 64}" font-family="${SANS}" font-size="30" font-weight="800" letter-spacing="1" fill="#345aa0">KEY TAKEAWAY</text>
-      ${tspans(tipLines, 100, tipTop + 128, 62, `font-family="${SANS}" font-size="44" fill="#1f3b66"`)}`;
+    const tipLines = wrap(data.tip, 22);
+    const tipTop = bodyBottom + 90;
+    const tipH = tipLines.length * 84 + 140;
+    tip = `<rect x="60" y="${tipTop}" width="${W - 120}" height="${tipH}" rx="24" fill="#eaf0fb" stroke="#cdddf5" stroke-width="2"/>
+      <text x="100" y="${tipTop + 76}" font-family="${SANS}" font-size="38" font-weight="800" letter-spacing="1" fill="#345aa0">KEY TAKEAWAY</text>
+      ${tspans(tipLines, 100, tipTop + 156, 84, `font-family="${SANS}" font-size="60" fill="#1f3b66"`)}`;
     contentBottom = tipTop + tipH;
   }
 
-  const H = Math.max(900, contentBottom + 150);
-  const footY = H - 78;
+  const H = Math.max(900, contentBottom + 170);
+  const footY = H - 88;
+  const dotStart = W / 2 - (data.total - 1) * 24;
   const dots = Array.from({ length: data.total }, (_, i) =>
-    `<circle cx="${470 + i * 42}" cy="${footY - 10}" r="11" fill="${i === data.page - 1 ? '#ce3b37' : '#cdd8ea'}"/>`).join('');
+    `<circle cx="${dotStart + i * 48}" cy="${footY - 12}" r="13" fill="${i === data.page - 1 ? '#ce3b37' : '#cdd8ea'}"/>`).join('');
 
-  const moduleLines = wrap(String(data.module).toUpperCase(), 26).slice(0, 2);
-  const moduleY = moduleLines.length > 1 ? 128 : 150;
+  const moduleLines = wrap(String(data.module).toUpperCase(), 22).slice(0, 2);
+  const moduleY = moduleLines.length > 1 ? 128 : 156;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#f4f7fb"/>
   <!-- content icon badge (no logo): the glyph matches what this card is about -->
-  <circle cx="132" cy="132" r="62" fill="#345aa0"/>
-  <g transform="translate(132,132) scale(2.05)">${ICONS[data.icon] || ICONS.idea}</g>
-  ${tspans(moduleLines, 230, moduleY, 42, `font-family="${SANS}" font-size="32" font-weight="800" letter-spacing="1.5" fill="#345aa0"`)}
-  <line x1="72" y1="224" x2="1008" y2="224" stroke="#e2e8f2" stroke-width="2"/>
-  ${tspans(titleLines, 72, titleY, titleLH, `font-family="${SANS}" font-size="64" font-weight="800" fill="#12203b"`)}
-  <rect x="76" y="${accentY}" width="140" height="10" rx="5" fill="#ce3b37"/>
-  ${tspans(bodyLines, 72, bodyY, bodyLH, `font-family="${SANS}" font-size="50" fill="#25324a"`)}
+  <circle cx="134" cy="136" r="66" fill="#345aa0"/>
+  <g transform="translate(134,136) scale(2.2)">${ICONS[data.icon] || ICONS.idea}</g>
+  ${tspans(moduleLines, 236, moduleY, 48, `font-family="${SANS}" font-size="40" font-weight="800" letter-spacing="1.5" fill="#345aa0"`)}
+  <line x1="72" y1="238" x2="${RM}" y2="238" stroke="#e2e8f2" stroke-width="2"/>
+  ${tspans(titleLines, 72, titleY, titleLH, `font-family="${SANS}" font-size="82" font-weight="800" fill="#12203b"`)}
+  <rect x="76" y="${accentY}" width="160" height="12" rx="6" fill="#ce3b37"/>
+  ${tspans(bodyLines, 72, bodyY, bodyLH, `font-family="${SANS}" font-size="72" fill="#25324a"`)}
   ${tip}
-  <text x="72" y="${footY}" font-family="${SANS}" font-size="32" font-weight="700" fill="#8a94a8">Zega Digital</text>
+  <text x="72" y="${footY}" font-family="${SANS}" font-size="42" font-weight="700" fill="#8a94a8">Zega Digital</text>
   ${dots}
-  <text x="1008" y="${footY}" text-anchor="end" font-family="${SANS}" font-size="32" fill="#8a94a8">${data.page} / ${data.total}</text>
+  <text x="${RM}" y="${footY}" text-anchor="end" font-family="${SANS}" font-size="42" fill="#8a94a8">${data.page} / ${data.total}</text>
 </svg>`;
 }
 

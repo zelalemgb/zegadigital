@@ -25,6 +25,9 @@ const { stripEmoji, fill } = require('../util/text');
 
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
+// Bump when the lesson-card DESIGN changes so WhatsApp re-fetches instead of
+// serving a stale cached image. v2 = enlarged typography for phone legibility.
+const CARD_VERSION = 2;
 
 let CTX = null; // gamification context for the current call
 let EVENTS = []; // events emitted during the current call
@@ -690,9 +693,11 @@ function lessonPage(content, node, index, lessonId, lang) {
   // Lesson content renders as a branded card image (the hybrid model: cards for
   // lessons, plain tappable text for menus/quizzes). `card` + `caption` let the
   // transport show a short caption under the image, or fall back to `text` when
-  // cards are off (lite mode) or media hosting isn't configured.
+  // cards are off (lite mode) or media hosting isn't configured. `v` busts
+  // WhatsApp's media cache when the card DESIGN changes (bump CARD_VERSION);
+  // same design keeps the same URL so it stays cached (data-saving).
   const image = lessonId
-    ? `/card.jpg?lang=${lang || content.meta?.code || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}`
+    ? `/card.jpg?lang=${lang || content.meta?.code || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}&v=${CARD_VERSION}`
     : card.image;
   return { text: fullText, image, card: Boolean(lessonId), caption: `${counter} · ${nav}` };
 }

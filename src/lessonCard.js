@@ -67,32 +67,35 @@ const tspans = (lines, x, y, lh, attrs) =>
   lines.map((l, i) => (l ? `<text x="${x}" y="${y + i * lh}" ${attrs}>${esc(l)}</text>` : '')).join('');
 
 function cardSvg(data) {
+  // Typography is sized RELATIVE to the 1080px canvas. WhatsApp scales the card
+  // down to the chat-bubble width, so the body needs to be ~50px here to render
+  // near WhatsApp's native ~16px text on a phone (37px looked tiny).
   const W = 1080;
-  const titleLines = wrap(data.title, 20);
-  const titleY = 448;
-  const titleLH = 74;
-  const accentY = titleY + (titleLines.length - 1) * titleLH + 30;
-  const bodyLines = wrap(data.body, 44);
-  const bodyY = accentY + 74;
-  const bodyLH = 54;
+  const titleLines = wrap(data.title, 17);
+  const titleY = 452;
+  const titleLH = 82;
+  const accentY = titleY + (titleLines.length - 1) * titleLH + 34;
+  const bodyLines = wrap(data.body, 33);
+  const bodyY = accentY + 92;
+  const bodyLH = 70;
   const bodyBottom = bodyY + Math.max(0, bodyLines.length - 1) * bodyLH;
 
   let tip = '';
   let contentBottom = bodyBottom;
   if (data.tip) {
-    const tipLines = wrap(data.tip, 46);
-    const tipTop = bodyBottom + 60;
-    const tipH = tipLines.length * 46 + 96;
-    tip = `<rect x="60" y="${tipTop}" width="960" height="${tipH}" rx="22" fill="#eaf0fb" stroke="#cdddf5" stroke-width="2"/>
-      <text x="96" y="${tipTop + 52}" font-family="${SANS}" font-size="25" font-weight="800" letter-spacing="1" fill="#345aa0">KEY TAKEAWAY</text>
-      ${tspans(tipLines, 96, tipTop + 100, 46, `font-family="${SANS}" font-size="32" fill="#1f3b66"`)}`;
+    const tipLines = wrap(data.tip, 34);
+    const tipTop = bodyBottom + 70;
+    const tipH = tipLines.length * 62 + 116;
+    tip = `<rect x="60" y="${tipTop}" width="960" height="${tipH}" rx="24" fill="#eaf0fb" stroke="#cdddf5" stroke-width="2"/>
+      <text x="100" y="${tipTop + 64}" font-family="${SANS}" font-size="30" font-weight="800" letter-spacing="1" fill="#345aa0">KEY TAKEAWAY</text>
+      ${tspans(tipLines, 100, tipTop + 128, 62, `font-family="${SANS}" font-size="44" fill="#1f3b66"`)}`;
     contentBottom = tipTop + tipH;
   }
 
-  const H = Math.max(1080, contentBottom + 130);
-  const footY = H - 74;
+  const H = Math.max(1080, contentBottom + 150);
+  const footY = H - 78;
   const dots = Array.from({ length: data.total }, (_, i) =>
-    `<circle cx="${470 + i * 36}" cy="${footY - 8}" r="9" fill="${i === data.page - 1 ? '#ce3b37' : '#cdd8ea'}"/>`).join('');
+    `<circle cx="${470 + i * 42}" cy="${footY - 10}" r="11" fill="${i === data.page - 1 ? '#ce3b37' : '#cdd8ea'}"/>`).join('');
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#f4f7fb"/>
@@ -100,15 +103,15 @@ function cardSvg(data) {
   <rect x="72" y="70" width="70" height="120" rx="16" fill="none" stroke="#ffffff" stroke-width="8"/>
   <rect x="97" y="86" width="20" height="7" rx="3" fill="#ffffff"/>
   <circle cx="107" cy="172" r="8" fill="#ffffff"/>
-  <text x="180" y="120" font-family="${SANS}" font-size="34" font-weight="800" letter-spacing="6" fill="#ffffff">ZEGA</text>
-  <text x="180" y="160" font-family="${SANS}" font-size="22" letter-spacing="3" fill="#cfe0ff">${esc(String(data.module).toUpperCase())}</text>
-  ${tspans(titleLines, 72, titleY, titleLH, `font-family="${SANS}" font-size="58" font-weight="800" fill="#12203b"`)}
-  <rect x="76" y="${accentY}" width="120" height="8" rx="4" fill="#ce3b37"/>
-  ${tspans(bodyLines, 72, bodyY, bodyLH, `font-family="${SANS}" font-size="37" fill="#25324a"`)}
+  <text x="180" y="124" font-family="${SANS}" font-size="38" font-weight="800" letter-spacing="6" fill="#ffffff">ZEGA</text>
+  <text x="180" y="166" font-family="${SANS}" font-size="26" letter-spacing="3" fill="#cfe0ff">${esc(String(data.module).toUpperCase())}</text>
+  ${tspans(titleLines, 72, titleY, titleLH, `font-family="${SANS}" font-size="64" font-weight="800" fill="#12203b"`)}
+  <rect x="76" y="${accentY}" width="140" height="10" rx="5" fill="#ce3b37"/>
+  ${tspans(bodyLines, 72, bodyY, bodyLH, `font-family="${SANS}" font-size="50" fill="#25324a"`)}
   ${tip}
-  <text x="72" y="${footY}" font-family="${SANS}" font-size="26" font-weight="700" fill="#8a94a8">Zega Digital</text>
+  <text x="72" y="${footY}" font-family="${SANS}" font-size="32" font-weight="700" fill="#8a94a8">Zega Digital</text>
   ${dots}
-  <text x="1008" y="${footY}" text-anchor="end" font-family="${SANS}" font-size="26" fill="#8a94a8">${data.page} / ${data.total}</text>
+  <text x="1008" y="${footY}" text-anchor="end" font-family="${SANS}" font-size="32" fill="#8a94a8">${data.page} / ${data.total}</text>
 </svg>`;
 }
 

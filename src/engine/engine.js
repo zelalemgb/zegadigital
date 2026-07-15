@@ -26,8 +26,8 @@ const { stripEmoji, fill } = require('../util/text');
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
 // Bump when the lesson-card DESIGN changes so WhatsApp re-fetches instead of
-// serving a stale cached image. v2 = enlarged typography for phone legibility.
-const CARD_VERSION = 2;
+// serving a stale cached image. v3 = content-icon header (dropped logo band).
+const CARD_VERSION = 3;
 
 let CTX = null; // gamification context for the current call
 let EVENTS = []; // events emitted during the current call

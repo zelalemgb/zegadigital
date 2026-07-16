@@ -856,10 +856,12 @@ function deriveActions(session, content) {
       return [act('🏠 Menu', 'MENU')];
     case 'menu': {
       const node = content.nodes[cur.id];
-      return node ? node.options.map((o) => act(shortLabel(o.label), o.input)) : [];
+      // Clean, emoji-free labels keep option buttons within WhatsApp's 20-char cap.
+      return node ? node.options.map((o) => act(cleanLabel(o.label), o.input)) : [];
     }
     case 'lesson':
-      return [act('Next ➡️', 'NEXT'), act('🔙 Back', '0'), act('🏠 Menu', 'MENU')];
+      // Bottom-nav style: Back and Next flank Menu in the middle, with icons.
+      return [act('⬅️ Back', '0'), act('🏠 Menu', 'MENU'), act('Next ➡️', 'NEXT')];
     case 'check': {
       // A/B/C as tappable reply buttons (SKIP still works if typed).
       const check = content.checks[cur.lessonId];
@@ -893,9 +895,6 @@ function act(label, value) {
 }
 
 // "1️⃣ 🌐 Digital Foundations" → "🌐 Digital Foundations" (drop the keycap digit)
-function shortLabel(label) {
-  return label.replace(/^[0-9]️?⃣\s*/u, '').trim() || label;
-}
 
 // Normalise every outgoing bubble to a rich object { text, image? }. A plain
 // string is shorthand for { text }. Empty bubbles are dropped.

@@ -192,8 +192,14 @@ function mediaUrl(image) {
  */
 async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
   const msgs = messages || [];
-  // WhatsApp can't render custom icons inline; send clean, emoji-free text.
-  const btns = actions.map((a) => ({ id: a.value, title: stripEmoji(a.label) || a.label }));
+  // Keep the authored emoji icons on reply buttons (WhatsApp renders them);
+  // cap at WhatsApp's 20-char title limit, splitting by code point so an emoji
+  // is never cut in half. Long menu labels get an ellipsis (the full label is
+  // always shown in the message body above the buttons).
+  const btns = actions.map((a) => {
+    const cps = Array.from(a.label || '');
+    return { id: a.value, title: cps.length > 20 ? `${cps.slice(0, 19).join('')}…` : a.label || a.value };
+  });
   // Reply buttons are only used for short "flow" screens (≤3 clear next-steps).
   // Menu screens (more options) rely on the numbered text — sending a separate
   // WhatsApp list message duplicates the menu and renders poorly, so we don't.
@@ -215,7 +221,12 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
       // eslint-disable-next-line no-await-in-loop
       if (isLast && actionStyle === 'list' && list && list.rows && list.rows.length) {
         try {
-          await sendList(to, stripEmoji(list.body) || text, list.button, list.rows);
+          // Show the numbered options IN the body (the full menu text) so they're
+          // visible immediately — the user can reply with a number OR tap the
+          // list button to pick. WhatsApp caps the list body at 1024 chars; if
+          // the menu is longer, fall back to the short body so the picker still sends.
+          const listBody = text.length <= 1024 ? text : stripEmoji(list.body) || text.slice(0, 1024);
+          await sendList(to, listBody, list.button, list.rows);
         } catch (listErr) {
           // A rejected list payload must never swallow the menu — fall back to
           // the plain numbered text so the user always sees their options.

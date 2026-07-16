@@ -234,13 +234,18 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
           if (text) await sendText(to, text);
         }
       } else if (isLast && showButtons && m && m.lesson) {
-        // Lesson page. Send the full text FIRST as a plain text message — it's
-        // delivered instantly and never truncates with "Read more" — then the
-        // coloured icon banner + nav buttons as one interactive message (banner
-        // as its header). Text-first guarantees the lesson sits ABOVE the
-        // buttons: a link-image lags behind and would otherwise jump on top.
-        await sendText(to, text.slice(0, 4096));
-        await sendButtons(to, (m.footer || '👇').slice(0, 1024), btns, link);
+        // Lesson page as ONE interactive message: icon banner (image header) +
+        // lesson text + page counter (body) + Next/Back/Menu buttons — banner
+        // always on top, in order. WhatsApp caps the body at 1024 chars; a page
+        // that long is split (text first, then banner + buttons) so nothing is
+        // lost. WhatsApp may show "Read more" on very long bodies.
+        const full = m.footer ? `${text}\n\n${m.footer}` : text;
+        if (full.length <= 1024) {
+          await sendButtons(to, full, btns, link);
+        } else {
+          await sendText(to, text.slice(0, 4096));
+          await sendButtons(to, (m.footer || '👇').slice(0, 1024), btns, link);
+        }
       } else if (isLast && showButtons) {
         // Interactive bodies cap at 1024 chars. A long lesson page would be
         // rejected (and lost), so send the content as a plain text message

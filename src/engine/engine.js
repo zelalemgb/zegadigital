@@ -780,8 +780,6 @@ function formatBody(raw) {
 
 function lessonPage(content, node, index, lessonId, lang) {
   const raw = node.messages[index];
-  const isLast = index === node.messages.length - 1;
-  const nav = isLast ? content.strings.lessonNavLast : content.strings.lessonNav;
   const total = node.messages.length;
   const u = content.strings.ui;
   const counter = fill(u.pageCounter || 'Page {{n}} of {{total}}', { n: index + 1, total });
@@ -790,12 +788,12 @@ function lessonPage(content, node, index, lessonId, lang) {
   const body = formatBody(typeof raw === 'string' ? raw : raw.text || '');
   const caption = (title ? `*${title}*\n\n` : '') + body;
 
-  const navFmt = String(nav).replace(/\b(NEXT|BACK|MENU|SKIP|YES)\b/g, '*$1*');
-  const footer = `_${counter}_  ·  ${navFmt}`;
-  // The lesson goes out as a media message: a slim content-matched icon banner
-  // (image) with the full text as its CAPTION — captions show far more than an
-  // interactive body (which truncates with "Read more") — and a separate compact
-  // button message for Next/Back/Menu. `lesson`/`footer` tell the transport this.
+  // Just the page counter — the tappable Next/Back/Menu buttons show the nav, so
+  // the verbose "Reply NEXT…" line is redundant and only lengthens the body.
+  const footer = `_${counter}_`;
+  // Sent as ONE interactive message: icon banner (image header) + this text
+  // (body) + Next/Back/Menu buttons — banner always on top, in order. `lesson`
+  // and `footer` tell the transport to combine them.
   const image = lessonId
     ? `/icon.jpg?lang=${lang || (content.meta && content.meta.code) || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}&v=${BANNER_VERSION}`
     : undefined;

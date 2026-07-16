@@ -285,7 +285,8 @@ function issueAndRender(userId, name, track, content, msgs) {
   const u = content.strings.ui;
   let cert = db.getCertificate(userId, track);
   if (!cert) {
-    cert = db.issueCertificate(certs.generateCode(), userId, name, track);
+    const lang = (content.meta && content.meta.code) || 'en'; // pick the language template
+    cert = db.issueCertificate(certs.generateCode(), userId, name, track, lang);
     db.logEvent(userId, 'certificateIssued', { track, code: cert.code });
   }
   const host = (config.mediaBaseUrl || '').replace(/\/$/, '');

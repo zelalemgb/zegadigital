@@ -109,6 +109,7 @@ ensureColumn('profiles', 'reminders_prompted', 'INTEGER DEFAULT 0');
 ensureColumn('profiles', 'name', 'TEXT'); // learner's name, for certificates
 ensureColumn('profiles', 'lite', 'INTEGER DEFAULT 0'); // data-saver: text lessons, no cards
 ensureColumn('profiles', 'resume', 'TEXT'); // in-progress lesson pointer {id,index} for "continue"
+ensureColumn('certificates', 'lang', 'TEXT'); // language template to render the certificate in
 
 // ── Prepared statements ──────────────────────────────────────────────────
 const stmt = {
@@ -149,7 +150,7 @@ const stmt = {
   quizEvents: db.prepare("SELECT data FROM events WHERE user_id = ? AND type = 'quizFinished'"),
   certPromptEvents: db.prepare("SELECT data FROM events WHERE user_id = ? AND type = 'certificatePrompted'"),
   insertCertificate: db.prepare(
-    'INSERT OR IGNORE INTO certificates (code, user_id, name, track) VALUES (?, ?, ?, ?)'
+    'INSERT OR IGNORE INTO certificates (code, user_id, name, track, lang) VALUES (?, ?, ?, ?, ?)'
   ),
   getCertByUserTrack: db.prepare('SELECT * FROM certificates WHERE user_id = ? AND track = ?'),
   getCertByCode: db.prepare('SELECT * FROM certificates WHERE code = ?'),
@@ -292,8 +293,8 @@ function getCertificate(userId, track) {
   return stmt.getCertByUserTrack.get(userId, track) || null;
 }
 
-function issueCertificate(code, userId, name, track) {
-  stmt.insertCertificate.run(code, userId, name, track);
+function issueCertificate(code, userId, name, track, lang = 'en') {
+  stmt.insertCertificate.run(code, userId, name, track, lang);
   return getCertificate(userId, track); // returns the existing row if one already existed
 }
 

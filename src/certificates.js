@@ -11,23 +11,9 @@
  */
 
 const crypto = require('crypto');
-const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-// Optional partner (Meta) logo. Drop the official asset at
-// public/img/meta-logo.png (or .svg) and it appears in the issuing-partners
-// area. Absent → the certificate falls back to the text credit. Read fresh each
-// render (rare) so a newly-added file shows after the next deploy/restart.
-const LOGO_DIR = path.join(__dirname, '..', 'public', 'img');
-function partnerLogoDataUri() {
-  for (const [file, mime] of [['meta-logo.png', 'image/png'], ['meta-logo.svg', 'image/svg+xml']]) {
-    try {
-      return `data:${mime};base64,${fs.readFileSync(path.join(LOGO_DIR, file)).toString('base64')}`;
-    } catch { /* not present — try next */ }
-  }
-  return null;
-}
 
 // Crockford-ish alphabet — no 0/O/1/I/L to keep codes easy to read aloud.
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -57,62 +43,49 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const SERIF = "'DejaVu Serif', Georgia, 'Times New Roman', serif";
-const SANS = "'DejaVu Sans', 'Helvetica Neue', Arial, sans-serif";
+// Latin from DejaVu Sans, Amharic names from Noto Sans Ethiopic (bundled via
+// FONTCONFIG_FILE — see src/util/fonts.js), so names print on Render's Linux box.
+const SANS = "'DejaVu Sans', 'Noto Sans Ethiopic', sans-serif";
 
-function certificateSvg(cert, host, metaLogo) {
-  const name = esc((cert.name || 'Learner').slice(0, 48));
-  const track = esc(trackLabel(cert.track));
+// The client's three certificate templates (1280×904) and where the dynamic
+// text sits on each: [centerX, baseline] for the learner name, the date, and
+// the small verify line. English uses the wave footer; am/om use the
+// diagonal-corner layout (Date signature further right, verify line on white).
+const TEMPLATE_DIR = path.join(__dirname, '..', 'public', 'img', 'cert');
+const TEMPLATES = {
+  en: { file: 'cirt_English.jpeg', name: [652, 415], date: [880, 760] },
+  am: { file: 'cirt_Amharic.jpeg', name: [648, 415], date: [950, 745] },
+  om: { file: 'cirt_Oromiffa.jpeg', name: [648, 415], date: [950, 745] },
+};
+
+// A transparent overlay with the learner name, the date, and a small verify-ID
+// chip. The chip sits in a light pill so it reads on any template background
+// (the English wave shifts from blue to white across the bottom). The full
+// clickable verify URL is sent separately in the WhatsApp message.
+function overlaySvg(cert, tpl) {
+  const name = esc((cert.name || 'Learner').slice(0, 42));
   const date = esc(formatDate(cert.issued_at));
   const code = esc(cert.code);
-  const verify = host ? `${host.replace(/\/$/, '')}/verify/${code}` : `verify/${code}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850">
-  <rect width="1200" height="850" fill="#ffffff"/>
-  <rect x="26" y="26" width="1148" height="798" rx="16" fill="#f8fafd" stroke="#345aa0" stroke-width="9"/>
-  <rect x="46" y="46" width="1108" height="758" rx="8" fill="none" stroke="#ce3b37" stroke-width="2.5"/>
-
-  <!-- brand mark: white phone in a blue rounded tile -->
-  <g transform="translate(540,86)">
-    <rect x="0" y="0" width="120" height="120" rx="28" fill="#345aa0"/>
-    <rect x="42" y="24" width="36" height="72" rx="9" fill="none" stroke="#ffffff" stroke-width="6"/>
-    <rect x="54" y="30" width="12" height="4" rx="2" fill="#ffffff"/>
-    <circle cx="60" cy="88" r="4.5" fill="#ffffff"/>
-  </g>
-  <text x="600" y="242" text-anchor="middle" font-family="${SANS}" font-size="26" font-weight="700" letter-spacing="6" fill="#345aa0">ZEGA</text>
-  <text x="600" y="270" text-anchor="middle" font-family="${SANS}" font-size="15" letter-spacing="2" fill="#5c6b86">MY DIGITAL WORLD ETHIOPIA</text>
-
-  <text x="600" y="338" text-anchor="middle" font-family="${SANS}" font-size="22" font-weight="700" letter-spacing="7" fill="#ce3b37">CERTIFICATE OF COMPLETION</text>
-  <text x="600" y="392" text-anchor="middle" font-family="${SERIF}" font-size="20" fill="#5c6b86" font-style="italic">This certifies that</text>
-
-  <text x="600" y="470" text-anchor="middle" font-family="${SERIF}" font-size="62" font-weight="700" fill="#12203b">${name}</text>
-  <line x1="360" y1="496" x2="840" y2="496" stroke="#d5dbe8" stroke-width="2"/>
-
-  <text x="600" y="548" text-anchor="middle" font-family="${SANS}" font-size="22" fill="#3a4763">has successfully completed the ${track} Digital Literacy program</text>
-  <text x="600" y="582" text-anchor="middle" font-family="${SANS}" font-size="22" fill="#3a4763">and passed the final assessment.</text>
-
-  <!-- gold seal -->
-  <g transform="translate(600,644)">
-    <path d="M-14 6 L-22 44 L0 33 L22 44 L14 6 Z" fill="#d99a1c"/>
-    <circle cx="0" cy="0" r="34" fill="#f5b731"/>
-    <circle cx="0" cy="0" r="34" fill="none" stroke="#c9860f" stroke-width="2"/>
-    <circle cx="0" cy="0" r="25" fill="none" stroke="#fff3d6" stroke-width="2"/>
-    <path d="M0 -17 l5 10 11 1.6 -8 7.6 2 11 -10 -5.6 -10 5.6 2 -11 -8 -7.6 11 -1.6 Z" fill="#ffffff"/>
-  </g>
-
-  <!-- issuing partners (Meta logo shown when the asset is present) -->
-  ${metaLogo ? `<image x="163" y="700" width="134" height="40" preserveAspectRatio="xMidYMid meet" href="${metaLogo}"/>` : ''}
-  <text x="230" y="${metaLogo ? 766 : 758}" text-anchor="middle" font-family="${SANS}" font-size="18" font-weight="700" fill="#12203b">OMNI Ethiopia &amp; Meta</text>
-  <text x="230" y="${metaLogo ? 788 : 780}" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#5c6b86">Issuing partners</text>
-
-  <text x="970" y="${metaLogo ? 766 : 758}" text-anchor="middle" font-family="${SANS}" font-size="18" font-weight="700" fill="#12203b">${date}</text>
-  <text x="970" y="${metaLogo ? 788 : 780}" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#5c6b86">Date issued</text>
-
-  <text x="600" y="810" text-anchor="middle" font-family="${SANS}" font-size="13" fill="#8a94a8">Certificate ${code} · verify at ${esc(verify)}</text>
+  const [nx, ny] = tpl.name;
+  const [dx, dy] = tpl.date;
+  const label = `Certificate ID: ${code}`;
+  const pw = Math.round(label.length * 9.2 + 30);
+  const px = 1250 - pw;
+  const py = 862;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="904">
+  <text x="${nx}" y="${ny}" text-anchor="middle" font-family="${SANS}" font-size="50" font-weight="700" fill="#1a2b5c">${name}</text>
+  <text x="${dx}" y="${dy}" text-anchor="middle" font-family="${SANS}" font-size="30" fill="#33415c">${date}</text>
+  <rect x="${px}" y="${py}" width="${pw}" height="30" rx="8" fill="#ffffff" opacity="0.88"/>
+  <rect x="${px}" y="${py}" width="${pw}" height="30" rx="8" fill="none" stroke="#c9d3e5" stroke-width="1"/>
+  <text x="${px + pw / 2}" y="${py + 21}" text-anchor="middle" font-family="${SANS}" font-size="16" fill="#33415c">${label}</text>
 </svg>`;
 }
 
-async function renderPng(cert, host) {
-  return sharp(Buffer.from(certificateSvg(cert, host, partnerLogoDataUri()))).png().toBuffer();
+async function renderPng(cert) {
+  const tpl = TEMPLATES[cert && cert.lang] || TEMPLATES.en;
+  const template = path.join(TEMPLATE_DIR, tpl.file);
+  const overlay = Buffer.from(overlaySvg(cert, tpl));
+  return sharp(template).composite([{ input: overlay, top: 0, left: 0 }]).png().toBuffer();
 }
 
 function verifyHtml(cert, host) {
@@ -156,4 +129,4 @@ function verifyHtml(cert, host) {
 </body></html>`;
 }
 
-module.exports = { generateCode, trackLabel, formatDate, certificateSvg, renderPng, verifyHtml };
+module.exports = { generateCode, trackLabel, formatDate, renderPng, verifyHtml };

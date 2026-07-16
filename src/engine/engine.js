@@ -724,17 +724,11 @@ function renderMenu(content, node) {
   // Clean labels: "1️⃣ 🌐 Digital Foundations" → "1  Digital Foundations".
   parts.push('', ...node.options.map((o) => `${o.input}  ${cleanLabel(o.label)}`));
   parts.push('', node.footer || content.strings.menuFooter);
-  // `list` lets richer clients (WhatsApp) render a tappable picker instead of a
-  // typed number. `body` omits the numbered options — the rows carry them.
-  const list = {
-    body: [title, node.body || ''].filter(Boolean).join('\n\n') || (node.title || 'Menu'),
-    button: content.strings.ui.listButton || 'Select',
-    rows: node.options.map((o) => {
-      const label = cleanLabel(o.label);
-      return { id: o.input, title: label, description: label.length > 24 ? label : undefined };
-    }),
-  };
-  return { text: parts.join('\n'), image: node.image, list };
+  // No WhatsApp "list" picker: it hides options behind a "Select" button (an
+  // extra tap + modal). The numbered options are shown inline instead — the
+  // learner replies with a number. Menus with ≤3 options still render as inline
+  // tappable reply buttons (see deriveActions).
+  return { text: parts.join('\n'), image: node.image };
 }
 
 function cleanLabel(label) {

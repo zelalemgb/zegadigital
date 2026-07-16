@@ -745,35 +745,61 @@ function cleanLabel(label) {
 // header, a bold lead line, the body (emojis kept as icons), and a footer with
 // the page counter plus bold tap-commands. Tappable Next/Back/Menu buttons are
 // added separately by the transport.
+// Bold a heading, keeping any leading emoji OUTSIDE the bold markers so WhatsApp
+// renders "💡 *Did You Know?*" cleanly (a "*" straight before an emoji breaks).
+function boldHeading(line) {
+  const m = line.match(/^(\s*(?:\p{Extended_Pictographic}️?\s*)+)(.+)$/u);
+  if (m && m[2].trim()) return `${m[1].trim()} *${m[2].trim()}*`;
+  return `*${line.trim()}*`;
+}
+
+// Format a lesson message into readable WhatsApp text: keep the authored emoji
+// icons, bullet the plain list lines (those following a "…:" line), and bold a
+// short heading-like first line.
+function formatBody(raw) {
+  const out = [];
+  let listMode = false;
+  let prevColon = false;
+  for (const rawLine of String(raw).split('\n')) {
+    const t = rawLine.trim();
+    if (!t) { out.push(''); listMode = false; prevColon = false; continue; }
+    if (/^\p{Extended_Pictographic}/u.test(t)) { // an icon line — keep as authored
+      out.push(t); listMode = false; prevColon = /[:：]$/.test(t); continue;
+    }
+    if ((prevColon || listMode) && t.length <= 42 && !t.includes('*')) { // list item
+      out.push(`•  ${t}`); listMode = true; prevColon = false; continue;
+    }
+    out.push(t); listMode = false; prevColon = /[:：]$/.test(t);
+  }
+  const first = out[0] ? out[0].trim() : '';
+  if (first && !first.startsWith('•') && first.length <= 46 && !first.includes('*')) {
+    out[0] = boldHeading(first);
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function lessonPage(content, node, index, lessonId, lang) {
   const raw = node.messages[index];
-  const bodyRaw = String((typeof raw === 'string' ? raw : raw.text || '')).trim();
   const isLast = index === node.messages.length - 1;
   const nav = isLast ? content.strings.lessonNavLast : content.strings.lessonNav;
   const total = node.messages.length;
   const u = content.strings.ui;
   const counter = fill(u.pageCounter || 'Page {{n}} of {{total}}', { n: index + 1, total });
 
-  // Emphasise a short heading-like lead line (e.g. "💡 Did You Know?").
-  const lines = bodyRaw.split('\n');
-  const lead = lines[0] ? lines[0].trim() : '';
-  if (lead && lead.length <= 48 && !lead.includes('*')) lines[0] = `*${lead}*`;
-  const body = lines.join('\n');
-
-  // Bold the tap-command keywords inside the localised nav hint.
-  const navFmt = String(nav).replace(/\b(NEXT|BACK|MENU|SKIP|YES)\b/g, '*$1*');
-
   const title = lessonId ? stripEmoji(curriculum.lessonLabel(content, lessonId)).trim() : '';
-  const parts = [];
-  if (title) parts.push(`*${title}*`, '');
-  parts.push(body, '', `_${counter}_  ·  ${navFmt}`);
-  // A slim content-matched icon banner as the message's image HEADER. The full
-  // text stays in the body (no `card` flag), so legibility is unaffected. `v`
-  // busts WhatsApp's media cache when the banner design changes.
+  const body = formatBody(typeof raw === 'string' ? raw : raw.text || '');
+  const caption = (title ? `*${title}*\n\n` : '') + body;
+
+  const navFmt = String(nav).replace(/\b(NEXT|BACK|MENU|SKIP|YES)\b/g, '*$1*');
+  const footer = `_${counter}_  ·  ${navFmt}`;
+  // The lesson goes out as a media message: a slim content-matched icon banner
+  // (image) with the full text as its CAPTION — captions show far more than an
+  // interactive body (which truncates with "Read more") — and a separate compact
+  // button message for Next/Back/Menu. `lesson`/`footer` tell the transport this.
   const image = lessonId
     ? `/icon.jpg?lang=${lang || (content.meta && content.meta.code) || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}&v=${BANNER_VERSION}`
     : undefined;
-  return { text: parts.join('\n'), image };
+  return { text: caption, footer, image, lesson: true };
 }
 
 function renderCheck(content, check) {

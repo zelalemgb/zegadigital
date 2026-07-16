@@ -56,8 +56,7 @@ test('mission "1" starts the next lesson directly', () => {
   // Lessons render as formatted text with a slim icon-banner header — the text
   // stays in the body (no `card` flag), so it's fully readable.
   assert.ok(r.messages.some((m) => m.image && /\/icon\.jpg/.test(m.image)), 'lesson has an icon-banner header');
-  assert.ok(!r.messages.some((m) => m.card), 'lesson text stays native, not baked into the image');
-  assert.match(joined(r), /Page \d+ of \d+/);
+  assert.ok(r.messages.some((m) => m.lesson && m.footer && /Page \d+ of \d+/.test(m.footer)), 'page counter in footer');
 });
 
 test('a lesson runs to its knowledge check, then completion emits lessonCompleted', () => {

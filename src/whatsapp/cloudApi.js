@@ -200,7 +200,10 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
   const showButtons = actions.length >= 1 && actions.length <= 3 && actionStyle !== 'list';
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i];
-    const text = stripEmoji(typeof m === 'string' ? m : m.text || '');
+    const rawText = typeof m === 'string' ? m : (m && m.text) || '';
+    // Lesson pages keep their authored emoji icons; everything else is stripped
+    // (clean menus / button titles that can't render custom glyphs).
+    const text = m && m.lesson ? rawText : stripEmoji(rawText);
     const link = mediaUrl(m && m.image);
     const list = m && m.list; // structured menu/quiz → tappable list picker
     const isLast = i === msgs.length - 1;
@@ -219,6 +222,18 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
           console.error('sendTurn: list failed, falling back to text:', listErr.message);
           if (text) await sendText(to, text);
         }
+      } else if (isLast && showButtons && m && m.lesson) {
+        // Lesson page: full text as a media CAPTION (banner header + text — no
+        // "Read more" truncation like interactive bodies), then a compact button
+        // message for navigation. Captions/text cap at generous limits; if the
+        // text is huge, drop the banner and send as plain text.
+        const footerBody = (m.footer || '👇').slice(0, 1024);
+        if (link && text.length <= 1024) {
+          await sendImage(to, link, text);
+        } else {
+          await sendText(to, text.slice(0, 4096));
+        }
+        await sendButtons(to, footerBody, btns, null);
       } else if (isLast && showButtons) {
         // Interactive bodies cap at 1024 chars. A long lesson page would be
         // rejected (and lost), so send the content as a plain text message

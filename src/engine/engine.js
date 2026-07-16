@@ -813,13 +813,10 @@ function renderQuestion(content, quiz, position, realIndex = position) {
   const q = quiz.questions[realIndex];
   const keys = ['A', 'B', 'C', 'D'].filter((k) => q.options[k] != null);
   const header = fill(u.quizQ, { n: position + 1, total: quiz.questions.length });
+  // Options are shown inline (A) … B) …) and the learner replies A/B/C/D — no
+  // WhatsApp "Select" picker, consistent with the rest of the bot.
   const text = [header, '', q.q, '', keys.map((k) => `${k}) ${q.options[k]}`).join('\n'), '', u.quizFooter].join('\n');
-  const list = {
-    body: [header, q.q].join('\n\n'),
-    button: u.listButton || 'Select',
-    rows: keys.map((k) => ({ id: k, title: `${k}) ${q.options[k]}`.slice(0, 24), description: q.options[k].length > 20 ? q.options[k] : undefined })),
-  };
-  return { text, list };
+  return { text };
 }
 
 function renderGlossary(g) {

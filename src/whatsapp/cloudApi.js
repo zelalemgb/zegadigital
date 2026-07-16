@@ -223,17 +223,13 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
           if (text) await sendText(to, text);
         }
       } else if (isLast && showButtons && m && m.lesson) {
-        // Lesson page: full text as a media CAPTION (banner header + text — no
-        // "Read more" truncation like interactive bodies), then a compact button
-        // message for navigation. Captions/text cap at generous limits; if the
-        // text is huge, drop the banner and send as plain text.
-        const footerBody = (m.footer || '👇').slice(0, 1024);
-        if (link && text.length <= 1024) {
-          await sendImage(to, link, text);
-        } else {
-          await sendText(to, text.slice(0, 4096));
-        }
-        await sendButtons(to, footerBody, btns, null);
+        // Lesson page. Send the full text FIRST as a plain text message — it's
+        // delivered instantly and never truncates with "Read more" — then the
+        // coloured icon banner + nav buttons as one interactive message (banner
+        // as its header). Text-first guarantees the lesson sits ABOVE the
+        // buttons: a link-image lags behind and would otherwise jump on top.
+        await sendText(to, text.slice(0, 4096));
+        await sendButtons(to, (m.footer || '👇').slice(0, 1024), btns, link);
       } else if (isLast && showButtons) {
         // Interactive bodies cap at 1024 chars. A long lesson page would be
         // rejected (and lost), so send the content as a plain text message

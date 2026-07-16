@@ -341,7 +341,19 @@ function handleMenu(session, content, cur, text, cmd) {
   if (!node) return goTo(session, content, 'MAIN');
   // Back/0 always goes up one level: module menu → its track menu; track menu → main menu.
   if (cmd === '0' || cmd === 'BACK') return goTo(session, content, menuBack(content, cur.id));
-  const option = node.options.find((o) => o.input === text);
+  let option = node.options.find((o) => o.input === text);
+  // Defensive fallback: also resolve by the option's label so a tapped reply
+  // button whose (possibly ellipsis-truncated) title got echoed as text never
+  // falls through to "didn't understand".
+  if (!option) {
+    const t = stripEmoji(String(text)).replace(/[…\s]+$/, '').trim().toLowerCase();
+    if (t.length >= 4) {
+      option = node.options.find((o) => {
+        const label = cleanLabel(o.label).toLowerCase();
+        return label === t || label.startsWith(t);
+      });
+    }
+  }
   if (!option) return out(session, [content.strings.unrecognised, renderMenu(content, node)]);
   return goTo(session, content, option.next);
 }

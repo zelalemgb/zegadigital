@@ -26,7 +26,7 @@ const { stripEmoji, fill } = require('../util/text');
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
 // Bump when the icon-banner design changes so WhatsApp re-fetches the header.
-const BANNER_VERSION = 1;
+const BANNER_VERSION = 2;
 
 let CTX = null; // gamification context for the current call
 let EVENTS = []; // events emitted during the current call

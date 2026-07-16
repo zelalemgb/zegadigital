@@ -193,6 +193,40 @@ async function renderCardJpg(data) {
 }
 
 /** Build the ordered card data for a lesson: one card per message page. */
+// Each lesson category gets a distinct header colour so learners start to
+// associate a colour with a topic. Keyed by the module segment of the lesson id
+// (e.g. "youth.ai.understanding" → "ai"); shared topics share a colour across
+// tracks. `accent` is the thin bottom bar. All chosen dark enough for white text.
+// Six base colours reused so that WITHIN each track every category is distinct
+// (a learner only ever sees one track), and AI stays brand-blue everywhere.
+//   Youth:  foundations=teal wellness=green engagement=purple
+//           opportunities=bronze safety=red ai=blue
+//   Adult:  privacy=teal youthsafety=green media=purple
+//           security=red ai=blue
+const TEAL = { bg: '#0e7c86', accent: '#0a5b62' };
+const GREEN = { bg: '#1f8a4c', accent: '#166638' };
+const PURPLE = { bg: '#6d3fb0', accent: '#4f2b82' };
+const BRONZE = { bg: '#b5651d', accent: '#8a4c14' };
+const RED = { bg: '#c0392b', accent: '#8f281d' };
+const BLUE = { bg: '#345aa0', accent: '#243f73' };
+const MODULE_COLORS = {
+  foundations: TEAL,
+  privacy: TEAL,
+  wellness: GREEN,
+  youthsafety: GREEN,
+  engagement: PURPLE,
+  media: PURPLE,
+  opportunities: BRONZE,
+  safety: RED,
+  security: RED,
+  ai: BLUE,
+};
+const DEFAULT_COLOR = { bg: '#345aa0', accent: '#243f73' };
+
+function moduleColor(lessonId) {
+  return MODULE_COLORS[String(lessonId).split('.')[1]] || DEFAULT_COLOR;
+}
+
 function lessonCards(content, lessonId) {
   const node = content.nodes[lessonId];
   if (!node || !node.messages) return [];
@@ -210,6 +244,7 @@ function lessonCards(content, lessonId) {
       title,
       body: cleanText(raw),
       icon: iconCategory(raw), // content-matched glyph for the header badge
+      color: moduleColor(lessonId), // per-category header colour
       page: i + 1,
       total,
       tip: i === total - 1 && check ? cleanText(check.reinforce) : null,
@@ -224,15 +259,16 @@ function lessonCards(content, lessonId) {
 function iconBannerSvg(data) {
   const W = 1080;
   const H = 300;
+  const color = data.color || DEFAULT_COLOR;
   const glyph = ICONS[data.icon] || ICONS.idea;
   const moduleLines = wrap(String(data.module || '').toUpperCase(), 20).slice(0, 2);
   const my = moduleLines.length > 1 ? H / 2 - 22 : H / 2 + 18;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-  <rect width="${W}" height="${H}" fill="#345aa0"/>
+  <rect width="${W}" height="${H}" fill="${color.bg}"/>
   <circle cx="170" cy="150" r="98" fill="#ffffff" opacity="0.14"/>
   <g transform="translate(170,150) scale(3.1)">${glyph}</g>
   ${tspans(moduleLines, 320, my, 66, `font-family="${SANS}" font-size="58" font-weight="800" letter-spacing="2" fill="#ffffff"`)}
-  <rect x="0" y="${H - 12}" width="${W}" height="12" fill="#ce3b37"/>
+  <rect x="0" y="${H - 12}" width="${W}" height="12" fill="${color.accent}"/>
 </svg>`;
 }
 

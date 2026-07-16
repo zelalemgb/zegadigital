@@ -25,9 +25,6 @@ const { stripEmoji, fill } = require('../util/text');
 
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
-// Bump when the lesson-card DESIGN changes so WhatsApp re-fetches instead of
-// serving a stale cached image. v4 = much larger type for phone legibility.
-const CARD_VERSION = 4;
 
 let CTX = null; // gamification context for the current call
 let EVENTS = []; // events emitted during the current call
@@ -742,24 +739,33 @@ function cleanLabel(label) {
   return stripEmoji(label).replace(/^\d+\s*/, '').trim() || label;
 }
 
-// A lesson page may be a plain string (legacy) or a card { text, image }.
-function lessonPage(content, node, index, lessonId, lang) {
+// Render a lesson page as well-formatted WhatsApp text: a bold lesson-title
+// header, a bold lead line, the body (emojis kept as icons), and a footer with
+// the page counter plus bold tap-commands. Tappable Next/Back/Menu buttons are
+// added separately by the transport.
+function lessonPage(content, node, index, lessonId) {
   const raw = node.messages[index];
-  const card = typeof raw === 'string' ? { text: raw } : raw;
+  const bodyRaw = String((typeof raw === 'string' ? raw : raw.text || '')).trim();
   const isLast = index === node.messages.length - 1;
   const nav = isLast ? content.strings.lessonNavLast : content.strings.lessonNav;
-  const counter = `(${index + 1} of ${node.messages.length})`;
-  const fullText = `${card.text}\n\n${counter} · ${nav}`;
-  // Lesson content renders as a branded card image (the hybrid model: cards for
-  // lessons, plain tappable text for menus/quizzes). `card` + `caption` let the
-  // transport show a short caption under the image, or fall back to `text` when
-  // cards are off (lite mode) or media hosting isn't configured. `v` busts
-  // WhatsApp's media cache when the card DESIGN changes (bump CARD_VERSION);
-  // same design keeps the same URL so it stays cached (data-saving).
-  const image = lessonId
-    ? `/card.jpg?lang=${lang || content.meta?.code || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}&v=${CARD_VERSION}`
-    : card.image;
-  return { text: fullText, image, card: Boolean(lessonId), caption: `${counter} · ${nav}` };
+  const total = node.messages.length;
+  const u = content.strings.ui;
+  const counter = fill(u.pageCounter || 'Page {{n}} of {{total}}', { n: index + 1, total });
+
+  // Emphasise a short heading-like lead line (e.g. "💡 Did You Know?").
+  const lines = bodyRaw.split('\n');
+  const lead = lines[0] ? lines[0].trim() : '';
+  if (lead && lead.length <= 48 && !lead.includes('*')) lines[0] = `*${lead}*`;
+  const body = lines.join('\n');
+
+  // Bold the tap-command keywords inside the localised nav hint.
+  const navFmt = String(nav).replace(/\b(NEXT|BACK|MENU|SKIP|YES)\b/g, '*$1*');
+
+  const title = lessonId ? stripEmoji(curriculum.lessonLabel(content, lessonId)).trim() : '';
+  const parts = [];
+  if (title) parts.push(`*${title}*`, '');
+  parts.push(body, '', `_${counter}_  ·  ${navFmt}`);
+  return { text: parts.join('\n') };
 }
 
 function renderCheck(content, check) {

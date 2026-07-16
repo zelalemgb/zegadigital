@@ -89,6 +89,7 @@ module.exports = {
       resumeTitle: '*Continue where you left off*',
       resumeLine: '{{title}} — page {{page}} of {{total}}',
       optContinue: '1  Continue where you left off',
+      pageCounter: 'Page {{n}} of {{total}}',
       trackDone: "You've finished this track. Well done!",
       replyNumber: '*Reply with a number:*',
       listButton: 'Select',

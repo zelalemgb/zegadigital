@@ -53,7 +53,9 @@ test('mission "1" starts the next lesson directly', () => {
   assert.equal(r.session.cursor.type, 'lesson');
   assert.equal(r.session.cursor.id, 'youth.foundations.privacy-intro');
   assert.match(joined(r), /Privacy = control/);
-  assert.ok(r.messages.some((m) => m.image), 'lesson card carries an image');
+  // Lessons render as formatted text (no image cards): bold title + page counter.
+  assert.ok(!r.messages.some((m) => m.image), 'lesson renders as text, not an image');
+  assert.match(joined(r), /Page \d+ of \d+/);
 });
 
 test('a lesson runs to its knowledge check, then completion emits lessonCompleted', () => {

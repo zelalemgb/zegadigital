@@ -108,6 +108,7 @@ module.exports = {
       resumeTitle: '*Bakka dhaabdanitti itti fufaa*',
       resumeLine: '{{title}} — fuula {{page}} / {{total}}',
       optContinue: '1  Bakka dhaabdanitti itti fufi',
+      pageCounter: 'Fuula {{n}}/{{total}}',
       trackDone: 'Karaa kana xumurtan. Hojii gaarii!',
       replyNumber: '*Lakkoofsaan deebisi:*',
       listButton: 'Filadhu',

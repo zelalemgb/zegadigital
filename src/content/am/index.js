@@ -108,6 +108,7 @@ module.exports = {
       resumeTitle: '*ካቆሙበት ይቀጥሉ*',
       resumeLine: '{{title}} — ገጽ {{page}} ከ {{total}}',
       optContinue: '1  ካቆሙበት ይቀጥሉ',
+      pageCounter: 'ገጽ {{n}} ከ {{total}}',
       trackDone: 'ይህን ትራክ አጠናቀዋል። በጣም ጥሩ!',
       replyNumber: '*በቁጥር ይመልሱ፡*',
       listButton: 'ይምረጡ',

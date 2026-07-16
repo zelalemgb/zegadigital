@@ -220,7 +220,18 @@ async function sendTurn(to, messages, actions = [], actionStyle = 'buttons') {
           if (text) await sendText(to, text);
         }
       } else if (isLast && showButtons) {
-        await sendButtons(to, body, btns, link);
+        // Interactive bodies cap at 1024 chars. A long lesson page would be
+        // rejected (and lost), so send the content as a plain text message
+        // first, then a short button message (its footer) so taps still work.
+        if (body.length > 1024) {
+          const nl = body.lastIndexOf('\n');
+          const head = nl > 0 ? body.slice(0, nl).trim() : body;
+          const foot = (nl > 0 ? body.slice(nl + 1).trim() : '') || '👇';
+          await sendText(to, head);
+          await sendButtons(to, foot, btns, null);
+        } else {
+          await sendButtons(to, body, btns, link);
+        }
       } else if (link) {
         await sendImage(to, link, body);
       } else if (text) {

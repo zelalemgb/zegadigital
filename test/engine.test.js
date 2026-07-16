@@ -53,8 +53,10 @@ test('mission "1" starts the next lesson directly', () => {
   assert.equal(r.session.cursor.type, 'lesson');
   assert.equal(r.session.cursor.id, 'youth.foundations.privacy-intro');
   assert.match(joined(r), /Privacy = control/);
-  // Lessons render as formatted text (no image cards): bold title + page counter.
-  assert.ok(!r.messages.some((m) => m.image), 'lesson renders as text, not an image');
+  // Lessons render as formatted text with a slim icon-banner header — the text
+  // stays in the body (no `card` flag), so it's fully readable.
+  assert.ok(r.messages.some((m) => m.image && /\/icon\.jpg/.test(m.image)), 'lesson has an icon-banner header');
+  assert.ok(!r.messages.some((m) => m.card), 'lesson text stays native, not baked into the image');
   assert.match(joined(r), /Page \d+ of \d+/);
 });
 

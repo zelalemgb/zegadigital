@@ -109,6 +109,20 @@ function lookupCard(req) {
   return cards[(parseInt(req.query.page, 10) || 1) - 1] || null;
 }
 
+// GET /icon.jpg?lang=&lesson=&page= → the slim content-matched icon banner used
+// as a lesson message's image header (the lesson text itself stays native text).
+app.get('/icon.jpg', async (req, res) => {
+  const card = lookupCard(req);
+  if (!card) return res.sendStatus(404);
+  try {
+    const jpg = await lessonCard.renderIconBannerJpg(card);
+    res.set('Content-Type', 'image/jpeg').set('Cache-Control', 'public, max-age=86400').send(jpg);
+  } catch (err) {
+    console.error('Icon banner render error:', err);
+    res.sendStatus(500);
+  }
+});
+
 // GET /card.jpg?lang=am&lesson=youth.ai.understanding&page=2 → the card WhatsApp
 // actually fetches: JPEG@820, ~half the bytes of the PNG. Cacheable so WhatsApp's
 // media CDN and the learner's device don't re-download an unchanged card.

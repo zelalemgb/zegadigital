@@ -25,6 +25,8 @@ const { stripEmoji, fill } = require('../util/text');
 
 const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
+// Bump when the icon-banner design changes so WhatsApp re-fetches the header.
+const BANNER_VERSION = 1;
 
 let CTX = null; // gamification context for the current call
 let EVENTS = []; // events emitted during the current call
@@ -743,7 +745,7 @@ function cleanLabel(label) {
 // header, a bold lead line, the body (emojis kept as icons), and a footer with
 // the page counter plus bold tap-commands. Tappable Next/Back/Menu buttons are
 // added separately by the transport.
-function lessonPage(content, node, index, lessonId) {
+function lessonPage(content, node, index, lessonId, lang) {
   const raw = node.messages[index];
   const bodyRaw = String((typeof raw === 'string' ? raw : raw.text || '')).trim();
   const isLast = index === node.messages.length - 1;
@@ -765,7 +767,13 @@ function lessonPage(content, node, index, lessonId) {
   const parts = [];
   if (title) parts.push(`*${title}*`, '');
   parts.push(body, '', `_${counter}_  ·  ${navFmt}`);
-  return { text: parts.join('\n') };
+  // A slim content-matched icon banner as the message's image HEADER. The full
+  // text stays in the body (no `card` flag), so legibility is unaffected. `v`
+  // busts WhatsApp's media cache when the banner design changes.
+  const image = lessonId
+    ? `/icon.jpg?lang=${lang || (content.meta && content.meta.code) || 'en'}&lesson=${encodeURIComponent(lessonId)}&page=${index + 1}&v=${BANNER_VERSION}`
+    : undefined;
+  return { text: parts.join('\n'), image };
 }
 
 function renderCheck(content, check) {

@@ -217,4 +217,33 @@ function lessonCards(content, lessonId) {
   });
 }
 
-module.exports = { cleanText, cardSvg, renderCardPng, renderCardJpg, lessonCards };
+// ── Icon header banner ───────────────────────────────────────────────────────
+// A slim branded strip (icon + topic) sent as the image HEADER of a lesson's
+// interactive message. Unlike the old cards, it carries NO lesson text — the
+// full readable text stays native in the message body — so it stays legible.
+function iconBannerSvg(data) {
+  const W = 1080;
+  const H = 300;
+  const glyph = ICONS[data.icon] || ICONS.idea;
+  const moduleLines = wrap(String(data.module || '').toUpperCase(), 20).slice(0, 2);
+  const my = moduleLines.length > 1 ? H / 2 - 22 : H / 2 + 18;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#345aa0"/>
+  <circle cx="170" cy="150" r="98" fill="#ffffff" opacity="0.14"/>
+  <g transform="translate(170,150) scale(3.1)">${glyph}</g>
+  ${tspans(moduleLines, 320, my, 66, `font-family="${SANS}" font-size="58" font-weight="800" letter-spacing="2" fill="#ffffff"`)}
+  <rect x="0" y="${H - 12}" width="${W}" height="12" fill="#ce3b37"/>
+</svg>`;
+}
+
+async function renderIconBannerJpg(data) {
+  return sharp(Buffer.from(iconBannerSvg(data)))
+    .resize({ width: 820 })
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toBuffer();
+}
+
+module.exports = {
+  cleanText, cardSvg, renderCardPng, renderCardJpg, lessonCards,
+  iconCategory, iconBannerSvg, renderIconBannerJpg,
+};

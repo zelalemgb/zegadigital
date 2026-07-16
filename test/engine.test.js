@@ -77,8 +77,10 @@ test('quiz completion emits quizFinished with score and pass flag', () => {
   let r = handle(session, '4'); // Quiz
   session = r.session;
   const quiz = getContent('en').quizzes.youth;
+  // Questions are shuffled per attempt, so answer by the presented order.
+  const order = session.cursor.order || quiz.questions.map((_, i) => i);
   for (let i = 0; i < quiz.questions.length; i++) {
-    r = handle(session, quiz.questions[i].answer);
+    r = handle(session, quiz.questions[order[i]].answer);
     session = r.session;
     if (i < quiz.questions.length - 1) { r = handle(session, 'YES'); session = r.session; }
   }

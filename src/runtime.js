@@ -79,6 +79,8 @@ function processMessage(userId, input, opts = {}) {
     switch (ev.type) {
       case 'lessonPage':
         profile.xp += AWARDS.lessonPage; // silent micro-reward
+        // Remember the page reached so the mission can offer to resume it.
+        profile.resume = { id: ev.lessonId, index: ev.index };
         break;
       case 'checkAnswered': {
         const amt = ev.correct ? AWARDS.checkCorrect : AWARDS.checkTried;
@@ -111,6 +113,8 @@ function processMessage(userId, input, opts = {}) {
           xpVisible += AWARDS.lessonComplete;
           db.logEvent(userId, 'lessonCompleted', { lessonId: ev.lessonId });
         }
+        // Finished this lesson → nothing left to resume.
+        if (profile.resume && profile.resume.id === ev.lessonId) profile.resume = null;
         break;
       case 'trackSelected':
         profile.track = ev.track;

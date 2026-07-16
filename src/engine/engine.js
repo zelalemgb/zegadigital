@@ -310,8 +310,11 @@ function handleHome(session, content, cur, text, cmd) {
   }
 
   const next = curriculum.nextLesson(content, session.track, CTX.completed);
+  const resume = resumeInfo(content, session);
   switch (text) {
     case '1':
+      // Continue an in-progress lesson at the exact page, if there is one.
+      if (resume) return resumeToLesson(session, content, resume.id, resume.index);
       if (next) return goTo(session, content, next.lessonId);
       // Track finished: offer the final assessment first (once), else the quiz.
       if (!CTX.endlineDone) return offerAssessment(session, content, 'endline');
@@ -360,8 +363,9 @@ function handleLesson(session, content, cur, cmd) {
   // Back → the module menu this lesson belongs to.
   if (cmd === '0' || cmd === 'BACK') return goTo(session, content, node.parent || 'MAIN');
 
-  emit('lessonPage', { lessonId: cur.id });
   const nextIndex = cur.index + 1;
+  // Record the page reached so the mission can offer "continue where you left off".
+  emit('lessonPage', { lessonId: cur.id, index: Math.min(nextIndex, node.messages.length - 1) });
   if (nextIndex >= node.messages.length) {
     return afterLesson(session, content, cur.id);
   }
@@ -461,10 +465,27 @@ function handleLanguageMenu(session, content, text) {
 }
 
 // ── Quiz ─────────────────────────────────────────────────────────────────────
+// Fisher–Yates shuffle of [0..n) so each quiz attempt asks in a fresh order.
+function shuffledOrder(n) {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function startQuiz(session, content, track) {
   const quiz = content.quizzes[track];
-  session.cursor = { type: 'quiz', track, index: 0, score: 0, phase: 'question' };
-  return out(session, [quiz.intro, renderQuestion(content, quiz, 0)]);
+  const order = shuffledOrder(quiz.questions.length);
+  session.cursor = { type: 'quiz', track, index: 0, score: 0, phase: 'question', order };
+  return out(session, [quiz.intro, renderQuestion(content, quiz, 0, order[0])]);
+}
+
+// The real question index for a quiz position, tolerant of pre-shuffle sessions.
+function questionAt(cur, quiz, position) {
+  const order = cur.order || quiz.questions.map((_, i) => i);
+  return order[position];
 }
 
 function handleQuiz(session, content, cur, text, cmd) {
@@ -475,7 +496,7 @@ function handleQuiz(session, content, cur, text, cmd) {
   if (cur.phase === 'question') {
     if (cmd === 'SKIP') return advanceQuiz(session, content, cur, quiz, total, []);
     if (['A', 'B', 'C', 'D'].includes(cmd)) {
-      const question = quiz.questions[cur.index];
+      const question = quiz.questions[questionAt(cur, quiz, cur.index)];
       const correct = cmd === question.answer;
       if (correct) {
         cur.score += 1;
@@ -490,7 +511,7 @@ function handleQuiz(session, content, cur, text, cmd) {
       session.cursor = cur;
       return out(session, [`${result}\n\n${u.quizNext}`]);
     }
-    return out(session, [content.strings.unrecognised, renderQuestion(content, quiz, cur.index)]);
+    return out(session, [content.strings.unrecognised, renderQuestion(content, quiz, cur.index, questionAt(cur, quiz, cur.index))]);
   }
   // continue
   if (['YES', 'Y', 'NEXT', '1'].includes(cmd)) return advanceQuiz(session, content, cur, quiz, total, []);
@@ -502,7 +523,7 @@ function advanceQuiz(session, content, cur, quiz, total, prefix) {
   cur.index += 1;
   cur.phase = 'question';
   session.cursor = cur;
-  return out(session, [...prefix, renderQuestion(content, quiz, cur.index)]);
+  return out(session, [...prefix, renderQuestion(content, quiz, cur.index, questionAt(cur, quiz, cur.index))]);
 }
 
 function finishQuiz(session, content, cur, quiz, prefix) {
@@ -584,6 +605,38 @@ function lname(content, index) {
   return names[index] || (LEVELS[index] && LEVELS[index].name) || '';
 }
 
+// Rough reading time for a lesson: ~120 words/min (unhurried, non-native),
+// clamped to a friendly 1–9 min so learners see lessons are short.
+function lessonMinutes(node) {
+  if (!node || !node.messages) return 2;
+  let words = 0;
+  for (const m of node.messages) {
+    const t = typeof m === 'string' ? m : m.text || '';
+    words += t.split(/\s+/).filter(Boolean).length;
+  }
+  return Math.max(1, Math.min(9, Math.round(words / 120)));
+}
+
+// The in-progress lesson to offer as "continue where you left off", or null.
+// Valid only mid-lesson (past page 1), in the active track, not yet completed.
+function resumeInfo(content, session) {
+  const r = CTX.profile && CTX.profile.resume;
+  if (!r || !r.id || !session.track || !String(r.id).startsWith(session.track)) return null;
+  const node = content.nodes[r.id];
+  if (!node || node.type !== 'lesson' || CTX.completed.has(r.id)) return null;
+  const total = node.messages.length;
+  if (!(r.index >= 1 && r.index < total)) return null;
+  return { id: r.id, index: r.index, total, title: stripEmoji(curriculum.lessonLabel(content, r.id)).trim() };
+}
+
+function resumeToLesson(session, content, id, index) {
+  const node = content.nodes[id];
+  if (!node || node.type !== 'lesson') return goTo(session, content, 'HOME');
+  const i = Math.max(0, Math.min(index, node.messages.length - 1));
+  session.cursor = { type: 'lesson', id, index: i };
+  return out(session, [lessonPage(content, node, i, id, session.lang)]);
+}
+
 function renderHome(session, content) {
   const u = content.strings.ui;
   const p = CTX.profile || {};
@@ -599,9 +652,16 @@ function renderHome(session, content) {
   const streak = p.streak || 0;
   const streakShort = streak > 0 ? fill(u.streakDays, { n: streak }) : u.streakNone;
 
+  const resume = resumeInfo(content, session);
   const lines = [u.welcomeBack, ''];
-  if (next) {
-    lines.push(u.todaysLesson, fill(u.lessonLine, { title: next.title, module: next.module.label }), '');
+  if (resume) {
+    lines.push(u.resumeTitle, fill(u.resumeLine, { title: resume.title, page: resume.index + 1, total: resume.total }), '');
+  } else if (next) {
+    lines.push(
+      u.todaysLesson,
+      fill(u.lessonLine, { title: next.title, module: next.module.label, mins: lessonMinutes(content.nodes[next.lessonId]) }),
+      ''
+    );
   } else {
     lines.push(u.todaysLesson, u.trackDone, '');
   }
@@ -611,7 +671,7 @@ function renderHome(session, content) {
   // Options first so they stay visible (WhatsApp truncates long messages).
   lines.push(
     u.replyNumber,
-    next ? u.optStartLesson : u.optStartQuiz,
+    resume ? u.optContinue : (next ? u.optStartLesson : u.optStartQuiz),
     u.optProgress,
     u.optBrowse,
     u.optQuiz,
@@ -714,11 +774,13 @@ function infoFooter(content) {
   return content.strings.ui.infoFooter;
 }
 
-function renderQuestion(content, quiz, index) {
+// `position` is the sequential slot (for "Question 3 of 13"); `realIndex` is the
+// actual (shuffled) question to render. Defaults keep old call-sites working.
+function renderQuestion(content, quiz, position, realIndex = position) {
   const u = content.strings.ui;
-  const q = quiz.questions[index];
+  const q = quiz.questions[realIndex];
   const keys = ['A', 'B', 'C', 'D'].filter((k) => q.options[k] != null);
-  const header = fill(u.quizQ, { n: index + 1, total: quiz.questions.length });
+  const header = fill(u.quizQ, { n: position + 1, total: quiz.questions.length });
   const text = [header, '', q.q, '', keys.map((k) => `${k}) ${q.options[k]}`).join('\n'), '', u.quizFooter].join('\n');
   const list = {
     body: [header, q.q].join('\n\n'),

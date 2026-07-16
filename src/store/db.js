@@ -108,6 +108,7 @@ ensureColumn('profiles', 'last_nudge_day', 'TEXT');
 ensureColumn('profiles', 'reminders_prompted', 'INTEGER DEFAULT 0');
 ensureColumn('profiles', 'name', 'TEXT'); // learner's name, for certificates
 ensureColumn('profiles', 'lite', 'INTEGER DEFAULT 0'); // data-saver: text lessons, no cards
+ensureColumn('profiles', 'resume', 'TEXT'); // in-progress lesson pointer {id,index} for "continue"
 
 // ── Prepared statements ──────────────────────────────────────────────────
 const stmt = {
@@ -120,7 +121,7 @@ const stmt = {
       lang = ?, track = ?, xp = ?, level_index = ?, streak = ?,
       longest_streak = ?, last_active_day = ?, opt_in_reminders = ?,
       reminder_hour = ?, last_nudge_day = ?, reminders_prompted = ?,
-      lite = ?, session = ?, updated_at = datetime('now')
+      lite = ?, resume = ?, session = ?, updated_at = datetime('now')
     WHERE user_id = ?
   `),
   allProfiles: db.prepare('SELECT * FROM profiles'),
@@ -178,6 +179,7 @@ function saveProfile(p) {
     p.lastNudgeDay,
     p.remindersPrompted ? 1 : 0,
     p.lite ? 1 : 0,
+    p.resume ? JSON.stringify(p.resume) : null,
     p.session ? JSON.stringify(p.session) : null,
     p.userId
   );
@@ -207,6 +209,7 @@ function rowToProfile(row) {
     remindersPrompted: Boolean(row.reminders_prompted),
     name: row.name || null,
     lite: Boolean(row.lite),
+    resume: row.resume ? safeParse(row.resume) : null,
     session: row.session ? safeParse(row.session) : null,
   };
 }

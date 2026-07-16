@@ -85,7 +85,10 @@ module.exports = {
       // Mission (home) screen
       welcomeBack: 'Welcome back 👋',
       todaysLesson: "*Today's lesson*",
-      lessonLine: '{{title}} ({{module}}, ~2 min)',
+      lessonLine: '{{title}} ({{module}}, ~{{mins}} min)',
+      resumeTitle: '*Continue where you left off*',
+      resumeLine: '{{title}} — page {{page}} of {{total}}',
+      optContinue: '1  Continue where you left off',
       trackDone: "You've finished this track. Well done!",
       replyNumber: '*Reply with a number:*',
       listButton: 'Select',

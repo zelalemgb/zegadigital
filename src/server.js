@@ -54,8 +54,21 @@ app.use('/img', express.static(path.join(PUBLIC, 'img')));
 app.use('/assets', express.static(path.join(PUBLIC, 'pwa')));
 app.use('/vendor', express.static(path.join(PUBLIC, 'vendor')));
 
+const DB_BACKEND = (process.env.DB_BACKEND || 'sqlite').toLowerCase();
+// Liveness: the process is up (used to restart a wedged instance).
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, whatsappConfigured: config.whatsapp.isConfigured });
+  res.json({ ok: true, backend: DB_BACKEND, whatsappConfigured: config.whatsapp.isConfigured });
+});
+// Readiness: dependencies (the database) are reachable. A load balancer uses
+// this to pull an unhealthy replica OUT of rotation without killing it — the
+// key probe once we run multiple instances (Phase 2).
+app.get('/ready', async (_req, res) => {
+  try {
+    await db.ping();
+    res.json({ ready: true, backend: DB_BACKEND });
+  } catch (err) {
+    res.status(503).json({ ready: false, backend: DB_BACKEND, error: err && err.message });
+  }
 });
 
 // ── Public landing page (PWA) ─────────────────────────────────────────────

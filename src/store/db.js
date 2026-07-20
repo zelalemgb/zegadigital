@@ -308,8 +308,23 @@ function getCheckResults(userId) {
   return out;
 }
 
+// Serialise same-user turns within this process. SQLite is single-instance, so
+// an in-process mutex is sufficient (see src/store/lock.js).
+const userMutex = require('./lock').keyedMutex();
+function withUserLock(userId, fn) {
+  return userMutex(userId, fn);
+}
+
+// Readiness ping — the DB is reachable and answering.
+function ping() {
+  db.prepare('SELECT 1 AS ok').get();
+  return true;
+}
+
 module.exports = {
   db,
+  withUserLock,
+  ping,
   getOrCreateProfile,
   saveProfile,
   allProfiles,

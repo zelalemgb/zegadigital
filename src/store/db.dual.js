@@ -34,6 +34,9 @@ async function init() {
 async function end() {
   if (pg.end) await pg.end();
 }
+// Use the cross-instance Postgres advisory lock (both stores are present).
+const withUserLock = (userId, fn) => pg.withUserLock(userId, fn);
+const ping = () => READ.ping();
 
 // Run the mirror write without ever throwing into the live request path.
 async function mirror(fn, label) {
@@ -108,6 +111,8 @@ const getCertificateByCode = (c) => READ.getCertificateByCode(c);
 module.exports = {
   init,
   end,
+  withUserLock,
+  ping,
   db: READ.db,
   saveProfile,
   markLessonComplete,

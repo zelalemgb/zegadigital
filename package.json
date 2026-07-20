@@ -11,7 +11,10 @@
     "tester": "node scripts/web-tester.js",
     "scheduler": "node scripts/scheduler.js",
     "metrics": "node scripts/metrics.js",
-    "test": "node --test"
+    "test": "node --test",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-functions=85 --test-coverage-branches=70",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js"
   },
   "keywords": [
     "whatsapp",

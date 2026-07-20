@@ -1,0 +1,38 @@
+name: CI
+
+# Runs on every push and pull request. This is the P0 "test gate": nothing
+# reaches production until this workflow is green. It runs in GitHub Actions and
+# never touches the live bot on Render.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit + contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install (clean, from lockfile)
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      # Coverage floors sit just below today's baseline (lines 96 / funcs 92 /
+      # branch 75). They exist to catch regressions, and should be ratcheted UP
+      # over time — never down. Fails the build if coverage drops through a floor.
+      - name: Coverage gate
+        run: npm run coverage

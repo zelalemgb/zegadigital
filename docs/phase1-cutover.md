@@ -36,9 +36,9 @@ setting the previous value — no code deploy, no data loss.
 
 ## Notes / follow-ups
 
-- **`src/analytics.js`** still reads SQLite directly (the `/admin` dashboard). During
-  dual-write SQLite stays current, so it keeps working; port it to the facade
-  (`./store`) before step 6 (contract), or it will read an emptying database.
+- **`src/analytics.js` is now backend-agnostic** (reads through the facade), so the
+  `/admin` dashboard and public stats work on SQLite, Postgres, or dual — nothing
+  is left tied to SQLite through the contract step. ✅
 - **Backfill is one-shot** and truncates Postgres first — only run it **before**
   step 3. Re-running after dual-write starts would wipe live Postgres writes
   (guarded by `--force`).

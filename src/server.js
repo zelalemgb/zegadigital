@@ -258,13 +258,13 @@ app.get('/cards', (req, res) => {
 });
 
 // Public, non-sensitive info the landing page needs (WA deep-link + aggregates).
-app.get('/public.json', (_req, res) => {
+app.get('/public.json', async (_req, res) => {
   const num = config.publicWaNumber;
   const msg = encodeURIComponent(config.publicWaMessage);
   res.json({
     waNumber: num || null,
     waLink: num ? `https://wa.me/${num}?text=${msg}` : null,
-    stats: analytics.publicStats(),
+    stats: await analytics.publicStats(),
   });
 });
 
@@ -333,12 +333,12 @@ app.get('/admin', requireAdmin, (_req, res) => {
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
-app.get('/admin/api', requireAdmin, (_req, res) => {
+app.get('/admin/api', requireAdmin, async (_req, res) => {
   try {
     res.json({
-      summary: analytics.summary(),
-      lessons: analytics.lessonBreakdown(),
-      learners: analytics.learners(),
+      summary: await analytics.summary(),
+      lessons: await analytics.lessonBreakdown(),
+      learners: await analytics.learners(),
     });
   } catch (err) {
     console.error('Dashboard data error:', err);

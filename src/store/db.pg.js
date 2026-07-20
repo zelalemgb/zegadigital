@@ -14,7 +14,12 @@
  * asks for it or `PGSSL=require` is set.
  */
 
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// Postgres returns COUNT()/SUM() (int8) and AVG() (numeric) as STRINGS by
+// default; parse them to JS numbers so analytics arithmetic matches SQLite.
+types.setTypeParser(20, (v) => (v === null ? null : parseInt(v, 10))); // int8 / bigint
+types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v))); // numeric
 
 const connectionString = process.env.DATABASE_URL;
 const wantsSsl = /sslmode=require/.test(connectionString || '') || process.env.PGSSL === 'require';

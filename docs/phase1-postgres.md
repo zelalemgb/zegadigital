@@ -66,3 +66,9 @@ that cutover safe.
 > Note: `src/analytics.js` still reads SQLite directly (the `/admin` dashboard).
 > It keeps working during the dual-write window; port it to the facade before the
 > final contract step.
+>
+> Note: `db.pg.init()` uses `CREATE TABLE IF NOT EXISTS`. That races on `pg_type`
+> if two connections run it at the exact same instant. Fine for a single instance;
+> **before Phase 2** (many replicas starting at once) wrap the schema DDL in a
+> `pg_advisory_lock` so concurrent startups serialise. (CI runs the two
+> Postgres test files as separate steps for the same reason.)

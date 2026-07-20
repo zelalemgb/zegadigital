@@ -67,5 +67,10 @@ jobs:
           cache: "npm"
       - name: Install (clean, from lockfile)
         run: npm ci
-      - name: Contract parity + wired-runtime end-to-end (Postgres)
-        run: node --test test/db.contract.test.js test/runtime.pg.test.js
+      # Two separate invocations (not one `node --test a b`): the runner would
+      # otherwise run both files concurrently and their CREATE TABLE IF NOT EXISTS
+      # would race on pg_type. Separate processes = no concurrent schema DDL.
+      - name: Contract parity (SQLite + Postgres)
+        run: node --test test/db.contract.test.js
+      - name: Wired-runtime end-to-end (Postgres)
+        run: node --test test/runtime.pg.test.js

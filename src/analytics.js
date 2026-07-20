@@ -8,24 +8,30 @@
  * completion, quiz performance, knowledge-check accuracy (mastery), and the
  * headline impact number — average learning gain (endline − baseline).
  *
- * Reads tables directly via the shared db handle; pure aggregation, no writes.
+ * Reads tables through the storage backend (SQLite or Postgres via the facade);
+ * pure aggregation, no writes.
  */
 
-const { db } = require('./store/db');
+const store = require('./store');
 const { getContent } = require('./content');
 const curriculum = require('./curriculum');
 const { levelInfo, LEVELS } = require('./gamification/xp');
 
-function rows(sql, ...params) {
-  return db.prepare(sql).all(...params);
+// Backend-agnostic read: SQLite exposes a sync `.prepare().all()`, Postgres an
+// async `pool.query()`. `await` handles both. The SQL below is standard/portable
+// (CAST(ts AS TEXT) for the date bucket works on both).
+async function rows(sql, params = []) {
+  const db = store.db;
+  if (db && typeof db.prepare === 'function') return db.prepare(sql).all(...params);
+  return (await db.query(sql, params)).rows;
 }
 
-function summary(opts = {}) {
+async function summary(opts = {}) {
   const today = opts.today || new Date().toISOString().slice(0, 10);
   const content = getContent('en');
 
-  const profiles = rows('SELECT * FROM profiles');
-  const lessonRows = rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id');
+  const profiles = await rows('SELECT * FROM profiles');
+  const lessonRows = await rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id');
   const completedByUser = new Map(lessonRows.map((r) => [r.user_id, r.c]));
   const trackTotals = {
     youth: curriculum.allLessonIds(content, 'youth').length,
@@ -54,30 +60,30 @@ function summary(opts = {}) {
   const streakBuckets = bucketStreaks(streaks);
 
   // ── Activity / retention proxies (from the event log) ──────────────────
-  const eventDays = rows(
-    "SELECT substr(ts,1,10) d, COUNT(DISTINCT user_id) u, COUNT(*) n FROM events GROUP BY d ORDER BY d DESC LIMIT 14"
+  const eventDays = await rows(
+    "SELECT substr(CAST(ts AS TEXT),1,10) d, COUNT(DISTINCT user_id) u, COUNT(*) n FROM events GROUP BY d ORDER BY d DESC LIMIT 14"
   );
   const activeToday = (eventDays.find((r) => r.d === today) || {}).u || 0;
-  const distinctActive = rows('SELECT COUNT(DISTINCT user_id) u FROM events')[0].u;
+  const distinctActive = (await rows('SELECT COUNT(DISTINCT user_id) u FROM events'))[0].u;
 
   // ── Quizzes ─────────────────────────────────────────────────────────────
-  const quizEvents = rows("SELECT data FROM events WHERE type = 'quizFinished'").map((r) => safe(r.data));
+  const quizEvents = (await rows("SELECT data FROM events WHERE type = 'quizFinished'")).map((r) => safe(r.data));
   const quizAttempts = quizEvents.length;
   const quizPasses = quizEvents.filter((q) => q && q.passed).length;
   const quizAvgPct = avg(quizEvents.map((q) => (q && q.total ? (q.score / q.total) * 100 : 0)));
 
   // ── Knowledge checks (mastery signal) ───────────────────────────────────
-  const checkAgg = rows('SELECT COUNT(*) n, SUM(correct) c FROM check_results')[0];
+  const checkAgg = (await rows('SELECT COUNT(*) n, SUM(correct) c FROM check_results'))[0];
   const checksAnswered = checkAgg.n || 0;
   const checkAccuracy = checksAnswered ? Math.round((checkAgg.c / checksAnswered) * 100) : 0;
 
   // ── Learning gain (headline impact) ─────────────────────────────────────
-  const learning = learningGain();
+  const learning = await learningGain();
 
   // ── Badges & reminders ──────────────────────────────────────────────────
-  const badgeRows = rows('SELECT badge_id, COUNT(*) c FROM badges GROUP BY badge_id ORDER BY c DESC');
+  const badgeRows = await rows('SELECT badge_id, COUNT(*) c FROM badges GROUP BY badge_id ORDER BY c DESC');
   const badgesAwarded = badgeRows.reduce((n, b) => n + b.c, 0);
-  const nudgesSent = rows("SELECT COUNT(*) c FROM events WHERE type = 'nudgeSent'")[0].c;
+  const nudgesSent = (await rows("SELECT COUNT(*) c FROM events WHERE type = 'nudgeSent'"))[0].c;
 
   return {
     generatedFor: today,
@@ -110,11 +116,11 @@ function summary(opts = {}) {
  * makes drop-off visible (counts fall as lessons get deeper); low check
  * accuracy flags lessons that are hard or unclear.
  */
-function lessonBreakdown() {
+async function lessonBreakdown() {
   const content = getContent('en');
-  const doneRows = rows('SELECT lesson_id, COUNT(*) c FROM lesson_progress GROUP BY lesson_id');
+  const doneRows = await rows('SELECT lesson_id, COUNT(*) c FROM lesson_progress GROUP BY lesson_id');
   const doneBy = new Map(doneRows.map((r) => [r.lesson_id, r.c]));
-  const checkRows = rows('SELECT lesson_id, COUNT(*) n, SUM(correct) c FROM check_results GROUP BY lesson_id');
+  const checkRows = await rows('SELECT lesson_id, COUNT(*) n, SUM(correct) c FROM check_results GROUP BY lesson_id');
   const checkBy = new Map(checkRows.map((r) => [r.lesson_id, r]));
 
   const out = [];
@@ -143,18 +149,18 @@ function lessonBreakdown() {
  * last 4 digits — enough to distinguish learners without exposing full PII in
  * the manager view.
  */
-function learners() {
+async function learners() {
   const content = getContent('en');
   const trackTotals = {
     youth: curriculum.allLessonIds(content, 'youth').length,
     adult: curriculum.allLessonIds(content, 'adult').length,
   };
   const doneBy = new Map(
-    rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id').map((r) => [r.user_id, r.c])
+    (await rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id')).map((r) => [r.user_id, r.c])
   );
   // quiz pass counts per user
   const quizBy = new Map();
-  for (const r of rows("SELECT user_id, data FROM events WHERE type = 'quizFinished'")) {
+  for (const r of await rows("SELECT user_id, data FROM events WHERE type = 'quizFinished'")) {
     const q = safe(r.data);
     const e = quizBy.get(r.user_id) || { attempts: 0, passes: 0 };
     e.attempts += 1;
@@ -163,14 +169,14 @@ function learners() {
   }
   // baseline / endline per user
   const asmtBy = new Map();
-  for (const a of rows('SELECT user_id, kind, score, total FROM assessments ORDER BY id')) {
+  for (const a of await rows('SELECT user_id, kind, score, total FROM assessments ORDER BY id')) {
     const e = asmtBy.get(a.user_id) || {};
     if (a.kind === 'baseline' && e.baseline == null) e.baseline = pct(a);
     if (a.kind === 'endline') e.endline = pct(a);
     asmtBy.set(a.user_id, e);
   }
 
-  return rows('SELECT * FROM profiles').map((p) => {
+  return (await rows('SELECT * FROM profiles')).map((p) => {
     const done = doneBy.get(p.user_id) || 0;
     const total = p.track ? trackTotals[p.track] || 0 : 0;
     const quiz = quizBy.get(p.user_id);
@@ -204,17 +210,17 @@ function maskId(id) {
  * Non-sensitive aggregates safe to expose on the public landing page: how many
  * learners have joined, and the fixed shape of the curriculum. No PII.
  */
-function publicStats() {
+async function publicStats() {
   const content = getContent('en');
-  const learners = rows('SELECT COUNT(*) c FROM profiles')[0].c || 0;
+  const learners = (await rows('SELECT COUNT(*) c FROM profiles'))[0].c || 0;
   const lessons =
     curriculum.allLessonIds(content, 'youth').length +
     curriculum.allLessonIds(content, 'adult').length;
   return { learners, lessons, languages: 3, tracks: 2 };
 }
 
-function learningGain() {
-  const all = rows('SELECT user_id, kind, score, total, id FROM assessments ORDER BY id');
+async function learningGain() {
+  const all = await rows('SELECT user_id, kind, score, total, id FROM assessments ORDER BY id');
   const byUser = new Map();
   for (const a of all) {
     if (!byUser.has(a.user_id)) byUser.set(a.user_id, {});

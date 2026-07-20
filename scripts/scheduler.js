@@ -10,5 +10,13 @@
  */
 
 const { startScheduler } = require('../src/scheduler/runner');
+const store = require('../src/store');
 
-startScheduler();
+// Initialise the backend (Postgres schema/connection; no-op for SQLite) first.
+store
+  .init()
+  .then(() => startScheduler())
+  .catch((err) => {
+    console.error('❌ Scheduler failed to initialise the database backend:', err);
+    process.exit(1);
+  });

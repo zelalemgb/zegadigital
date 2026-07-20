@@ -16,41 +16,41 @@ const correct = items.map((i) => i.answer);
 const wrong = items.map((i) => (i.answer === 'A' ? 'B' : 'A'));
 
 // Drive a user from onboarding through baseline, one lesson, and endline.
-function fullJourney(uid) {
-  send(uid, 'Hi');
-  send(uid, '1'); // English
-  send(uid, '1'); // Youth → baseline offer
+async function fullJourney(uid) {
+  await send(uid, 'Hi');
+  await send(uid, '1'); // English
+  await send(uid, '1'); // Youth → baseline offer
 
   // Baseline — answer all wrong (score 0%).
-  send(uid, 'START');
+  await send(uid, 'START');
   let r;
-  for (const a of wrong) r = send(uid, a);
+  for (const a of wrong) r = await send(uid, a);
   // Now on the mission. Complete the first lesson + its check (correct).
-  send(uid, '1'); // start lesson
+  await send(uid, '1'); // start lesson
   const lesson = getContent('en').nodes['youth.foundations.privacy-intro'];
-  for (let i = 0; i < lesson.messages.length; i++) send(uid, 'NEXT');
-  send(uid, getContent('en').checks['youth.foundations.privacy-intro'].answer);
+  for (let i = 0; i < lesson.messages.length; i++) await send(uid, 'NEXT');
+  await send(uid, getContent('en').checks['youth.foundations.privacy-intro'].answer);
 
   // Endline — answer all correct (score 100%).
-  send(uid, 'FINAL');
-  send(uid, 'START');
-  for (const a of correct) r = send(uid, a);
+  await send(uid, 'FINAL');
+  await send(uid, 'START');
+  for (const a of correct) r = await send(uid, a);
   return r;
 }
 
-test('endline reports a learning gain vs baseline', () => {
-  const last = fullJourney('learner-1');
+test('endline reports a learning gain vs baseline', async () => {
+  const last = await fullJourney('learner-1');
   assert.match(joined(last), /0% at the start to 100% now/);
 });
 
-test('analytics.summary reflects the funnel, gain, checks and reach', () => {
+test('analytics.summary reflects the funnel, gain, checks and reach', async () => {
   // learner-1 already completed a full journey above; add a second, lighter user.
-  send('learner-2', 'Hi');
-  send('learner-2', '1'); // English
-  send('learner-2', '2'); // Adult → baseline offer
-  send('learner-2', 'SKIP'); // skip baseline
+  await send('learner-2', 'Hi');
+  await send('learner-2', '1'); // English
+  await send('learner-2', '2'); // Adult → baseline offer
+  await send('learner-2', 'SKIP'); // skip baseline
 
-  const a = analytics.summary({ today: DAY });
+  const a = await analytics.summary({ today: DAY });
 
   assert.ok(a.reach.users >= 2, 'counts both users');
   assert.equal(a.funnel[0].stage, 'Joined');
@@ -71,14 +71,14 @@ test('analytics.summary reflects the funnel, gain, checks and reach', () => {
   assert.ok(a.reach.distinctActive >= 2);
 });
 
-test('skipping the baseline records no assessment for that user', () => {
+test('skipping the baseline records no assessment for that user', async () => {
   // learner-2 skipped — should not contribute a baseline.
-  const a = analytics.summary({ today: DAY });
+  const a = await analytics.summary({ today: DAY });
   assert.equal(a.learningGain.baselineTaken, 1); // only learner-1
 });
 
-test('lessonBreakdown reports completions and check accuracy per lesson', () => {
-  const rows = analytics.lessonBreakdown();
+test('lessonBreakdown reports completions and check accuracy per lesson', async () => {
+  const rows = await analytics.lessonBreakdown();
   assert.ok(rows.length >= 35, 'covers the whole curriculum');
   const intro = rows.find((r) => r.lessonId === 'youth.foundations.privacy-intro');
   assert.ok(intro, 'first lesson present');
@@ -90,8 +90,8 @@ test('lessonBreakdown reports completions and check accuracy per lesson', () => 
   assert.ok(rows.some((r) => r.track === 'adult'));
 });
 
-test('publicStats exposes only non-sensitive aggregates', () => {
-  const s = analytics.publicStats();
+test('publicStats exposes only non-sensitive aggregates', async () => {
+  const s = await analytics.publicStats();
   assert.ok(s.learners >= 2, 'counts joined learners');
   assert.equal(s.lessons, 35, 'full curriculum size');
   assert.equal(s.languages, 3);
@@ -100,8 +100,8 @@ test('publicStats exposes only non-sensitive aggregates', () => {
   assert.deepEqual(Object.keys(s).sort(), ['languages', 'learners', 'lessons', 'tracks']);
 });
 
-test('learners returns masked, per-user progress rows', () => {
-  const rows = analytics.learners();
+test('learners returns masked, per-user progress rows', async () => {
+  const rows = await analytics.learners();
   assert.ok(rows.length >= 2);
   const l1 = rows.find((r) => r.id === '…er-1'); // last 4 of 'learner-1'
   assert.ok(l1, 'learner-1 present (masked)');

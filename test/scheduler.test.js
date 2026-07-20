@@ -43,10 +43,10 @@ test('buildNudge produces a message, a CONTINUE button, and a template name', ()
 test('runNudgeSweep sends once, records it, and does not repeat the same day', async () => {
   const uid = 'sweep-user';
   // Onboard on day 1, opt in.
-  runtime.processMessage(uid, 'Hi', { today: '2026-07-01' });
-  runtime.processMessage(uid, '1', { today: '2026-07-01' }); // English
-  runtime.processMessage(uid, '1', { today: '2026-07-01' }); // Youth
-  runtime.processMessage(uid, 'REMIND ON', { today: '2026-07-01' });
+  await runtime.processMessage(uid, 'Hi', { today: '2026-07-01' });
+  await runtime.processMessage(uid, '1', { today: '2026-07-01' }); // English
+  await runtime.processMessage(uid, '1', { today: '2026-07-01' }); // Youth
+  await runtime.processMessage(uid, 'REMIND ON', { today: '2026-07-01' });
 
   const sent = [];
   const sender = async (userId, nudge) => sent.push({ userId, type: nudge.type });

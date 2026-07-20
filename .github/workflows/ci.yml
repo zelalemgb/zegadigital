@@ -36,3 +36,43 @@ jobs:
       # over time — never down. Fails the build if coverage drops through a floor.
       - name: Coverage gate
         run: npm run coverage
+
+  # Phase 1 parity gate: run the repository contract suite against a real
+  # Postgres as well as SQLite. Identical passes prove the datastore swap is safe.
+  contract-postgres:
+    name: Repository contract (SQLite + Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: zega
+          POSTGRES_PASSWORD: zega
+          POSTGRES_DB: zega_contract_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zega"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://zega:zega@localhost:5432/zega_contract_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - name: Install (clean, from lockfile)
+        run: npm ci
+      # Two separate invocations (not one `node --test a b`): the runner would
+      # otherwise run both files concurrently and their CREATE TABLE IF NOT EXISTS
+      # would race on pg_type. Separate processes = no concurrent schema DDL.
+      - name: Contract parity (SQLite + Postgres)
+        run: node --test test/db.contract.test.js
+      - name: Wired-runtime end-to-end (Postgres)
+        run: node --test test/runtime.pg.test.js
+      - name: Dual-write backend (Postgres)
+        run: node --test test/db.dual.test.js

@@ -28,24 +28,24 @@ function optsFrom(req) {
   return today ? { today } : {};
 }
 
-app.post('/api/start', (req, res) => {
+app.post('/api/start', async (req, res) => {
   const id = req.body.userId || 'web';
-  const r = runtime.startConversation(id, optsFrom(req));
+  const r = await runtime.startConversation(id, optsFrom(req));
   res.json(r);
 });
 
-app.post('/api/message', (req, res) => {
+app.post('/api/message', async (req, res) => {
   const id = req.body.userId || 'web';
   const text = req.body.text == null ? '' : String(req.body.text);
-  const r = runtime.processMessage(id, text, optsFrom(req));
+  const r = await runtime.processMessage(id, text, optsFrom(req));
   res.json(r);
 });
 
 // Demo the proactive nudge a user would receive (ignores "is it due?" so you can
 // preview it on demand). In production the scheduler decides timing.
-app.post('/api/nudge', (req, res) => {
+app.post('/api/nudge', async (req, res) => {
   const id = req.body.userId || 'web';
-  const nudge = runtime.buildNudgeForUser(id, req.body.type);
+  const nudge = await runtime.buildNudgeForUser(id, req.body.type);
   res.json(nudge || { message: 'Pick a track first, then I can nudge you about your next lesson.' });
 });
 

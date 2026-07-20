@@ -29,7 +29,7 @@ const config = require('./config');
 const runtime = require('./runtime');
 const wa = require('./whatsapp/cloudApi');
 const analytics = require('./analytics');
-const db = require('./store/db');
+const db = require('./store'); // backend facade (SQLite or Postgres via DB_BACKEND)
 const certs = require('./certificates');
 const lessonCard = require('./lessonCard');
 const curriculum = require('./curriculum');
@@ -85,7 +85,7 @@ app.get('/cert/sample.png', async (req, res) => {
 // Certificate image, rendered on demand from the stored row. WhatsApp fetches
 // this URL, and the verify page embeds it.
 app.get(/^\/cert\/([A-Za-z0-9-]+)\.png$/, async (req, res) => {
-  const cert = db.getCertificateByCode(req.params[0]);
+  const cert = await db.getCertificateByCode(req.params[0]);
   if (!cert) return res.sendStatus(404);
   try {
     const png = await certs.renderPng(cert, baseUrl(req));
@@ -96,8 +96,8 @@ app.get(/^\/cert\/([A-Za-z0-9-]+)\.png$/, async (req, res) => {
   }
 });
 // Public verification page.
-app.get('/verify/:code', (req, res) => {
-  const cert = db.getCertificateByCode(req.params.code);
+app.get('/verify/:code', async (req, res) => {
+  const cert = await db.getCertificateByCode(req.params.code);
   res.status(cert ? 200 : 404).send(certs.verifyHtml(cert, baseUrl(req)));
 });
 
@@ -393,7 +393,7 @@ app.post('/webhook', async (req, res) => {
     try {
       if (m.id) wa.markRead(m.id);
       const input = m.text == null ? '' : m.text;
-      const result = runtime.processMessage(m.from, input);
+      const result = await runtime.processMessage(m.from, input);
       await wa.sendTurn(m.from, result.messages, result.actions, result.actionStyle);
     } catch (err) {
       // Log the offending input, and never leave the user in silence — send a
@@ -406,13 +406,22 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-app.listen(config.port, () => {
-  console.log(`🤖 Zega Digital bot listening on :${config.port}`);
-  if (!config.whatsapp.isConfigured) {
-    console.log('⚠️  WhatsApp Cloud API not configured (WHATSAPP_TOKEN / PHONE_NUMBER_ID).');
-    console.log('   The webhook will still verify; run `npm run cli` to test the flow locally.');
-  }
-  if (config.runScheduler) startScheduler();
-});
+// Initialise the storage backend (creates the Postgres schema/connection; a
+// no-op for SQLite) BEFORE we start accepting requests, then listen.
+db.init()
+  .then(() => {
+    app.listen(config.port, () => {
+      console.log(`🤖 Zega Digital bot listening on :${config.port} (db: ${(process.env.DB_BACKEND || 'sqlite').toLowerCase()})`);
+      if (!config.whatsapp.isConfigured) {
+        console.log('⚠️  WhatsApp Cloud API not configured (WHATSAPP_TOKEN / PHONE_NUMBER_ID).');
+        console.log('   The webhook will still verify; run `npm run cli` to test the flow locally.');
+      }
+      if (config.runScheduler) startScheduler();
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Failed to initialise the database backend:', err);
+    process.exit(1);
+  });
 
 module.exports = app;

@@ -17,7 +17,7 @@
  */
 
 const config = require('./config');
-const db = require('./store/db');
+const db = require('./store'); // backend facade (SQLite or Postgres via DB_BACKEND)
 const engine = require('./engine/engine');
 const curriculum = require('./curriculum');
 const streak = require('./gamification/streak');
@@ -35,11 +35,11 @@ function todayStr(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
-function processMessage(userId, input, opts = {}) {
+async function processMessage(userId, input, opts = {}) {
   const today = opts.today || todayStr();
-  const profile = db.getOrCreateProfile(userId, config.defaultLang);
-  const completed = db.getCompletedLessons(userId);
-  const earnedSet = db.getEarnedBadges(userId);
+  const profile = await db.getOrCreateProfile(userId, config.defaultLang);
+  const completed = await db.getCompletedLessons(userId);
+  const earnedSet = await db.getEarnedBadges(userId);
 
   // Restore conversation state from the profile.
   const session = profile.session || engine.freshSession();
@@ -53,12 +53,12 @@ function processMessage(userId, input, opts = {}) {
   const activity = streak.registerActivity(profile, today);
   if (activity.newDay) {
     profile.xp = (profile.xp || 0) + AWARDS.dailyCheckIn;
-    db.logEvent(userId, 'dailyCheckIn', { streak: profile.streak });
+    await db.logEvent(userId, 'dailyCheckIn', { streak: profile.streak });
   }
 
   // 2) Build read-only context for the engine.
   const content = getContent(session.lang);
-  const priorAssessments = db.getAssessments(userId);
+  const priorAssessments = await db.getAssessments(userId);
   const ctx = {
     profile,
     completed,
@@ -86,8 +86,8 @@ function processMessage(userId, input, opts = {}) {
         const amt = ev.correct ? AWARDS.checkCorrect : AWARDS.checkTried;
         profile.xp += amt;
         xpVisible += amt;
-        db.recordCheckResult(userId, ev.lessonId, ev.correct); // mastery signal
-        db.logEvent(userId, 'checkAnswered', { lessonId: ev.lessonId, correct: ev.correct });
+        await db.recordCheckResult(userId, ev.lessonId, ev.correct); // mastery signal
+        await db.logEvent(userId, 'checkAnswered', { lessonId: ev.lessonId, correct: ev.correct });
         break;
       }
       case 'quizCorrect':
@@ -100,39 +100,39 @@ function processMessage(userId, input, opts = {}) {
           profile.xp += AWARDS.quizPassBonus;
           xpVisible += AWARDS.quizPassBonus;
         }
-        db.logEvent(userId, 'quizFinished', ev);
+        await db.logEvent(userId, 'quizFinished', ev);
         break;
       case 'lessonCompleted':
         // Only a genuinely NEW completion counts as progress — re-reading an
         // already-finished lesson must not re-trigger rewards or the certificate.
         if (!completed.has(ev.lessonId)) {
           completedThisTurn = true;
-          db.markLessonComplete(userId, ev.lessonId);
+          await db.markLessonComplete(userId, ev.lessonId);
           completed.add(ev.lessonId);
           profile.xp += AWARDS.lessonComplete;
           xpVisible += AWARDS.lessonComplete;
-          db.logEvent(userId, 'lessonCompleted', { lessonId: ev.lessonId });
+          await db.logEvent(userId, 'lessonCompleted', { lessonId: ev.lessonId });
         }
         // Finished this lesson → nothing left to resume.
         if (profile.resume && profile.resume.id === ev.lessonId) profile.resume = null;
         break;
       case 'trackSelected':
         profile.track = ev.track;
-        db.logEvent(userId, 'trackSelected', { track: ev.track });
+        await db.logEvent(userId, 'trackSelected', { track: ev.track });
         break;
       case 'setLite':
         profile.lite = ev.on; // data-saver: plain-text lessons instead of cards
-        db.logEvent(userId, 'setLite', { on: ev.on });
+        await db.logEvent(userId, 'setLite', { on: ev.on });
         break;
       case 'setReminders':
         profile.optInReminders = ev.on;
         if (ev.hour != null) profile.reminderHour = ev.hour;
         profile.remindersPrompted = true;
-        db.logEvent(userId, 'setReminders', { on: ev.on, hour: profile.reminderHour });
+        await db.logEvent(userId, 'setReminders', { on: ev.on, hour: profile.reminderHour });
         break;
       case 'assessmentFinished':
-        db.recordAssessment(userId, ev.kind, ev.track, ev.score, ev.total);
-        db.logEvent(userId, 'assessmentFinished', ev);
+        await db.recordAssessment(userId, ev.kind, ev.track, ev.score, ev.total);
+        await db.logEvent(userId, 'assessmentFinished', ev);
         profile.xp += AWARDS.assessment;
         xpVisible += AWARDS.assessment;
         if (ev.kind === 'endline') gainEvent = ev; // compute learning gain below
@@ -154,15 +154,15 @@ function processMessage(userId, input, opts = {}) {
     earnedSet
   );
   for (const b of newBadges) {
-    db.awardBadge(userId, b.id);
+    await db.awardBadge(userId, b.id);
     earnedSet.add(b.id);
     profile.xp += AWARDS.badge;
-    db.logEvent(userId, 'badge', { id: b.id });
+    await db.logEvent(userId, 'badge', { id: b.id });
   }
 
   // Certificate: earned on completing every lesson AND passing the track quiz.
   const justProgressed = completedThisTurn || Boolean(quizFinishedEvent);
-  const certMsgs = handleCertificates(userId, profile, session, content, completed, result.events, justProgressed);
+  const certMsgs = await handleCertificates(userId, profile, session, content, completed, result.events, justProgressed);
 
   // One-time opt-in nudge after the user finishes their first lesson.
   let optInPrompt = null;
@@ -177,7 +177,7 @@ function processMessage(userId, input, opts = {}) {
   profile.lang = session.lang;
   if (session.track) profile.track = session.track;
   profile.session = session;
-  db.saveProfile(profile);
+  await db.saveProfile(profile);
 
   // Build the outgoing bubbles: [daily greeting] + engine output + [rewards].
   const u = content.strings.ui;
@@ -235,7 +235,7 @@ function processMessage(userId, input, opts = {}) {
 // Earned once per track after every lesson is complete AND the track quiz is
 // passed. Issued here (not the pure engine) because it needs the DB and image
 // rendering. Returns extra bubbles to append; may set the name-capture cursor.
-function handleCertificates(userId, profile, session, content, completed, events, justProgressed) {
+async function handleCertificates(userId, profile, session, content, completed, events, justProgressed) {
   const u = content.strings.ui;
   const msgs = [];
   const track = session.track;
@@ -243,51 +243,57 @@ function handleCertificates(userId, profile, session, content, completed, events
   // 1) Name just captured by the engine → issue immediately.
   const ready = events.find((e) => e.type === 'certificateReady');
   if (ready) {
-    db.setName(userId, ready.name);
+    await db.setName(userId, ready.name);
     profile.name = ready.name;
-    issueAndRender(userId, ready.name, ready.track, content, msgs);
+    await issueAndRender(userId, ready.name, ready.track, content, msgs);
     return msgs;
   }
   if (!track) return msgs;
 
   const eligible =
     curriculum.trackProgress(content, track, completed).complete &&
-    db.getPassedQuizTracks(userId).has(track);
-  const already = db.getCertificate(userId, track);
+    (await db.getPassedQuizTracks(userId)).has(track);
+  const already = await db.getCertificate(userId, track);
 
   // 2) Explicit CERTIFICATE request.
   if (events.some((e) => e.type === 'certificateRequest')) {
-    if (already) return (issueAndRender(userId, already.name, track, content, msgs), msgs);
-    if (!eligible) return (msgs.push(u.certNotYet), msgs);
+    if (already) {
+      await issueAndRender(userId, already.name, track, content, msgs);
+      return msgs;
+    }
+    if (!eligible) {
+      msgs.push(u.certNotYet);
+      return msgs;
+    }
     return askOrIssue(userId, profile, session, content, track, msgs);
   }
 
   // 3) Auto: crossed the finish line this turn — but prompt at most once.
   //    (After a skip, the learner can still reply CERTIFICATE to get it.)
-  if (justProgressed && eligible && !already && !db.getCertPromptedTracks(userId).has(track)) {
-    askOrIssue(userId, profile, session, content, track, msgs);
+  if (justProgressed && eligible && !already && !(await db.getCertPromptedTracks(userId)).has(track)) {
+    await askOrIssue(userId, profile, session, content, track, msgs);
   }
   return msgs;
 }
 
-function askOrIssue(userId, profile, session, content, track, msgs) {
+async function askOrIssue(userId, profile, session, content, track, msgs) {
   if (profile.name) {
-    issueAndRender(userId, profile.name, track, content, msgs);
+    await issueAndRender(userId, profile.name, track, content, msgs);
   } else {
     session.cursor = { type: 'certname', track };
     msgs.push(content.strings.ui.certEarnedAskName);
-    db.logEvent(userId, 'certificatePrompted', { track }); // so we don't nag again
+    await db.logEvent(userId, 'certificatePrompted', { track }); // so we don't nag again
   }
   return msgs;
 }
 
-function issueAndRender(userId, name, track, content, msgs) {
+async function issueAndRender(userId, name, track, content, msgs) {
   const u = content.strings.ui;
-  let cert = db.getCertificate(userId, track);
+  let cert = await db.getCertificate(userId, track);
   if (!cert) {
     const lang = (content.meta && content.meta.code) || 'en'; // pick the language template
-    cert = db.issueCertificate(certs.generateCode(), userId, name, track, lang);
-    db.logEvent(userId, 'certificateIssued', { track, code: cert.code });
+    cert = await db.issueCertificate(certs.generateCode(), userId, name, track, lang);
+    await db.logEvent(userId, 'certificateIssued', { track, code: cert.code });
   }
   const host = (config.mediaBaseUrl || '').replace(/\/$/, '');
   const verifyUrl = host ? `${host}/verify/${cert.code}` : `verify/${cert.code}`;
@@ -296,8 +302,8 @@ function issueAndRender(userId, name, track, content, msgs) {
 }
 
 /** Begin (or resume) a conversation — keeps earned XP/badges, resets the cursor. */
-function startConversation(userId, opts = {}) {
-  const profile = db.getOrCreateProfile(userId, config.defaultLang);
+async function startConversation(userId, opts = {}) {
+  const profile = await db.getOrCreateProfile(userId, config.defaultLang);
   const session = engine.freshSession();
   session.lang = profile.lang || session.lang;
   if (profile.track) {
@@ -306,17 +312,17 @@ function startConversation(userId, opts = {}) {
     session.awaitingLanguage = false;
   }
   profile.session = session;
-  db.saveProfile(profile);
+  await db.saveProfile(profile);
   // Returning user → resume at their mission screen; brand-new → onboarding.
   return processMessage(userId, profile.track ? 'CONTINUE' : 'Hi', opts);
 }
 
 /** Build the nudge a given user would receive (or null if not ready). */
-function buildNudgeForUser(userId, type) {
-  const profile = db.getOrCreateProfile(userId, config.defaultLang);
+async function buildNudgeForUser(userId, type) {
+  const profile = await db.getOrCreateProfile(userId, config.defaultLang);
   if (!profile.track) return null; // nothing to resume yet
   const content = getContent(profile.lang);
-  const completed = db.getCompletedLessons(userId);
+  const completed = await db.getCompletedLessons(userId);
   return nudges.buildNudge(profile, content, completed, type);
 }
 
@@ -328,19 +334,19 @@ function buildNudgeForUser(userId, type) {
  *   now = { hour, day }   send = async (userId, nudge, profile) => {}
  */
 async function runNudgeSweep(now, send) {
-  const due = nudges.selectDueNudges(db.allProfiles(), now);
+  const due = nudges.selectDueNudges(await db.allProfiles(), now);
   for (const item of due) {
-    const profile = db.getOrCreateProfile(item.userId, config.defaultLang);
+    const profile = await db.getOrCreateProfile(item.userId, config.defaultLang);
     const content = getContent(profile.lang);
-    const completed = db.getCompletedLessons(item.userId);
+    const completed = await db.getCompletedLessons(item.userId);
     const nudge = nudges.buildNudge(profile, content, completed, item.type);
     try {
       await send(item.userId, nudge, profile);
-      db.setLastNudge(item.userId, now.day);
-      db.logEvent(item.userId, 'nudgeSent', { type: item.type });
+      await db.setLastNudge(item.userId, now.day);
+      await db.logEvent(item.userId, 'nudgeSent', { type: item.type });
     } catch (err) {
       // Leave last_nudge_day unset so we retry on the next sweep.
-      db.logEvent(item.userId, 'nudgeFailed', { type: item.type, error: String(err && err.message) });
+      await db.logEvent(item.userId, 'nudgeFailed', { type: item.type, error: String(err && err.message) });
     }
   }
   return due;

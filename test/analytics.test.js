@@ -16,39 +16,39 @@ const correct = items.map((i) => i.answer);
 const wrong = items.map((i) => (i.answer === 'A' ? 'B' : 'A'));
 
 // Drive a user from onboarding through baseline, one lesson, and endline.
-function fullJourney(uid) {
-  send(uid, 'Hi');
-  send(uid, '1'); // English
-  send(uid, '1'); // Youth → baseline offer
+async function fullJourney(uid) {
+  await send(uid, 'Hi');
+  await send(uid, '1'); // English
+  await send(uid, '1'); // Youth → baseline offer
 
   // Baseline — answer all wrong (score 0%).
-  send(uid, 'START');
+  await send(uid, 'START');
   let r;
-  for (const a of wrong) r = send(uid, a);
+  for (const a of wrong) r = await send(uid, a);
   // Now on the mission. Complete the first lesson + its check (correct).
-  send(uid, '1'); // start lesson
+  await send(uid, '1'); // start lesson
   const lesson = getContent('en').nodes['youth.foundations.privacy-intro'];
-  for (let i = 0; i < lesson.messages.length; i++) send(uid, 'NEXT');
-  send(uid, getContent('en').checks['youth.foundations.privacy-intro'].answer);
+  for (let i = 0; i < lesson.messages.length; i++) await send(uid, 'NEXT');
+  await send(uid, getContent('en').checks['youth.foundations.privacy-intro'].answer);
 
   // Endline — answer all correct (score 100%).
-  send(uid, 'FINAL');
-  send(uid, 'START');
-  for (const a of correct) r = send(uid, a);
+  await send(uid, 'FINAL');
+  await send(uid, 'START');
+  for (const a of correct) r = await send(uid, a);
   return r;
 }
 
-test('endline reports a learning gain vs baseline', () => {
-  const last = fullJourney('learner-1');
+test('endline reports a learning gain vs baseline', async () => {
+  const last = await fullJourney('learner-1');
   assert.match(joined(last), /0% at the start to 100% now/);
 });
 
-test('analytics.summary reflects the funnel, gain, checks and reach', () => {
+test('analytics.summary reflects the funnel, gain, checks and reach', async () => {
   // learner-1 already completed a full journey above; add a second, lighter user.
-  send('learner-2', 'Hi');
-  send('learner-2', '1'); // English
-  send('learner-2', '2'); // Adult → baseline offer
-  send('learner-2', 'SKIP'); // skip baseline
+  await send('learner-2', 'Hi');
+  await send('learner-2', '1'); // English
+  await send('learner-2', '2'); // Adult → baseline offer
+  await send('learner-2', 'SKIP'); // skip baseline
 
   const a = analytics.summary({ today: DAY });
 

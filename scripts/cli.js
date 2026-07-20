@@ -34,17 +34,19 @@ function botSay(result) {
 console.log('\x1b[1mZega Digital ዜጋ ዲጂታል — local simulator\x1b[0m');
 console.log('Commands: .quit  .reset\n');
 
-botSay(runtime.startConversation(USER_ID));
-rl.prompt();
+require('../src/store').init().then(async () => {
+  botSay(await runtime.startConversation(USER_ID));
+  rl.prompt();
+});
 
-rl.on('line', (line) => {
+rl.on('line', async (line) => {
   const input = line.trim();
   if (input === '.quit') return rl.close();
   if (input === '.reset') {
-    botSay(runtime.startConversation(USER_ID));
+    botSay(await runtime.startConversation(USER_ID));
     return rl.prompt();
   }
-  botSay(runtime.processMessage(USER_ID, input));
+  botSay(await runtime.processMessage(USER_ID, input));
   rl.prompt();
 });
 

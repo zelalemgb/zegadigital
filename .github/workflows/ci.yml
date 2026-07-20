@@ -67,5 +67,5 @@ jobs:
           cache: "npm"
       - name: Install (clean, from lockfile)
         run: npm ci
-      - name: Contract suite — dual-run (SQLite + Postgres)
-        run: node --test test/db.contract.test.js
+      - name: Contract parity + wired-runtime end-to-end (Postgres)
+        run: node --test test/db.contract.test.js test/runtime.pg.test.js

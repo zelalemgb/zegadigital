@@ -38,14 +38,31 @@ Without `DATABASE_URL`, `npm test` runs SQLite-only (unchanged for day-to-day de
 2. Copy the **Internal Database URL** into the web service's env as `DATABASE_URL`.
 3. Keep `ZEGA_DB` in place — the live app still uses SQLite until the cutover.
 
-## Next step (not in this PR)
+## App wiring (done — `feat/postgres-wiring`)
 
-Wire the app to the async repository behind a `DB_BACKEND` flag:
+The app now selects its backend via `DB_BACKEND` and is fully async against the
+repository. Set `DB_BACKEND=postgres` (+ `DATABASE_URL`) and the whole bot runs
+on Postgres; unset, it stays on SQLite. Proven end-to-end by
+`test/runtime.pg.test.js` (a full learner flow persisted to Postgres) and by the
+unchanged SQLite suite.
 
-1. Thread `async/await` through the engine/runtime call sites (mechanical,
-   guarded by the existing tests).
-2. **Expand/contract cutover** on the live bot: dual-write → backfill → dual-read
-   + verify parity on real traffic → flip `DB_BACKEND=postgres` by canary → keep
-   SQLite one release → contract. Zero downtime, instantly reversible.
+- `src/store/index.js` — backend facade; the app requires `./store`, never a
+  concrete backend.
+- `src/runtime.js`, `src/server.js`, scripts — `async`/`await` throughout; the
+  engine stays pure (no DB).
+- Startup runs `await store.init()` (creates the Postgres schema; no-op for SQLite).
 
-The contract parity proven here is what makes that cutover safe.
+## Next step — the live cutover (not code)
+
+**Expand/contract** on the live bot, all flag-gated and reversible:
+
+1. dual-write to both stores → backfill history online →
+2. dual-read + verify parity on real traffic (SQLite stays authoritative) →
+3. flip `DB_BACKEND=postgres` by canary → keep SQLite one release → contract.
+
+Zero downtime. The contract parity + wired-runtime e2e proven here are what make
+that cutover safe.
+
+> Note: `src/analytics.js` still reads SQLite directly (the `/admin` dashboard).
+> It keeps working during the dual-write window; port it to the facade before the
+> final contract step.

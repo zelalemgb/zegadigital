@@ -252,11 +252,40 @@ async function end() {
   await pool.end();
 }
 
+// Serialise same-user turns ACROSS replicas. An in-process mutex first (so a
+// within-instance pile-up doesn't hold pooled connections while it waits), then
+// a Postgres transaction-less session advisory lock keyed on the user id — held
+// on a dedicated client for the duration of the turn and always released.
+const userMutex = require('./lock').keyedMutex();
+async function withUserLock(userId, fn) {
+  return userMutex(userId, async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('SELECT pg_advisory_lock(hashtext($1))', [String(userId)]);
+      return await fn();
+    } finally {
+      try {
+        await client.query('SELECT pg_advisory_unlock(hashtext($1))', [String(userId)]);
+      } catch (e) {
+        console.error('[pg] advisory unlock failed:', e && e.message);
+      }
+      client.release();
+    }
+  });
+}
+
+async function ping() {
+  await pool.query('SELECT 1 AS ok');
+  return true;
+}
+
 module.exports = {
   db: pool,
   init,
   reset,
   end,
+  withUserLock,
+  ping,
   getOrCreateProfile,
   saveProfile,
   allProfiles,

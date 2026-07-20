@@ -76,3 +76,5 @@ jobs:
         run: node --test test/runtime.pg.test.js
       - name: Dual-write backend (Postgres)
         run: node --test test/db.dual.test.js
+      - name: Concurrency lock (Postgres)
+        run: node --test test/db.lock.test.js

@@ -11,10 +11,21 @@ services:
     startCommand: npm start
     healthCheckPath: /health
     autoDeploy: true
+    # ── Single-instance today (SQLite lives on this disk). ──
     disk:
       name: zega-data
       mountPath: /var/data
       sizeGB: 1
+    # ── Phase 2 (AFTER the Postgres cutover): make the web tier stateless and
+    # horizontal. Once DB_BACKEND=postgres, REMOVE the `disk:` block above and
+    # the ZEGA_DB env, point the health check at readiness, and enable scaling:
+    #   healthCheckPath: /ready
+    #   scaling:
+    #     minInstances: 2
+    #     maxInstances: 5
+    #     targetCPUPercent: 70
+    # (Sessions already live in the DB, so replicas are interchangeable. See
+    # docs/phase2.md.)
     envVars:
       - key: NODE_VERSION
         value: "24"

@@ -35,7 +35,13 @@ function todayStr(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
-async function processMessage(userId, input, opts = {}) {
+// Public entry — serialised per user so two concurrent turns for the same
+// learner can't clobber each other's profile write (safe across replicas).
+function processMessage(userId, input, opts = {}) {
+  return db.withUserLock(userId, () => processMessageInner(userId, input, opts));
+}
+
+async function processMessageInner(userId, input, opts = {}) {
   const today = opts.today || todayStr();
   const profile = await db.getOrCreateProfile(userId, config.defaultLang);
   const completed = await db.getCompletedLessons(userId);
@@ -302,7 +308,11 @@ async function issueAndRender(userId, name, track, content, msgs) {
 }
 
 /** Begin (or resume) a conversation — keeps earned XP/badges, resets the cursor. */
-async function startConversation(userId, opts = {}) {
+function startConversation(userId, opts = {}) {
+  return db.withUserLock(userId, () => startConversationInner(userId, opts));
+}
+
+async function startConversationInner(userId, opts = {}) {
   const profile = await db.getOrCreateProfile(userId, config.defaultLang);
   const session = engine.freshSession();
   session.lang = profile.lang || session.lang;
@@ -314,7 +324,8 @@ async function startConversation(userId, opts = {}) {
   profile.session = session;
   await db.saveProfile(profile);
   // Returning user → resume at their mission screen; brand-new → onboarding.
-  return processMessage(userId, profile.track ? 'CONTINUE' : 'Hi', opts);
+  // Call the INNER (unlocked) — we already hold this user's lock.
+  return processMessageInner(userId, profile.track ? 'CONTINUE' : 'Hi', opts);
 }
 
 /** Build the nudge a given user would receive (or null if not ready). */
@@ -342,8 +353,10 @@ async function runNudgeSweep(now, send) {
     const nudge = nudges.buildNudge(profile, content, completed, item.type);
     try {
       await send(item.userId, nudge, profile);
-      await db.setLastNudge(item.userId, now.day);
-      await db.logEvent(item.userId, 'nudgeSent', { type: item.type });
+      await db.withUserLock(item.userId, async () => {
+        await db.setLastNudge(item.userId, now.day);
+        await db.logEvent(item.userId, 'nudgeSent', { type: item.type });
+      });
     } catch (err) {
       // Leave last_nudge_day unset so we retry on the next sweep.
       await db.logEvent(item.userId, 'nudgeFailed', { type: item.type, error: String(err && err.message) });

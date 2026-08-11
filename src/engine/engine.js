@@ -70,6 +70,7 @@ function normaliseCtx(ctx) {
     earnedBadges: (ctx && ctx.earnedBadges) || [],
     baselineDone: Boolean(ctx && ctx.baselineDone),
     endlineDone: Boolean(ctx && ctx.endlineDone),
+    certQuizPassed: Boolean(ctx && ctx.certQuizPassed),
   };
 }
 
@@ -694,6 +695,12 @@ function renderHome(session, content) {
   return lines.join('\n');
 }
 
+// A 10-block text progress bar, e.g. 60% → ▓▓▓▓▓▓░░░░
+function progressBar(pct, width = 10) {
+  const filled = Math.max(0, Math.min(width, Math.round((pct / 100) * width)));
+  return '▓'.repeat(filled) + '░'.repeat(width - filled);
+}
+
 function renderProgress(session, content) {
   const u = content.strings.ui;
   const p = CTX.profile || {};
@@ -717,6 +724,27 @@ function renderProgress(session, content) {
         : u.progModNotStarted;
     lines.push(`• ${m.label} — ${status}`);
   }
+
+  // Certificate — the headline. Show readiness, or a clear progress bar + how
+  // many lessons remain, so learners see exactly what stands between them and
+  // their official certificate.
+  lines.push('', u.progCertTitle);
+  if (prog.complete && CTX.certQuizPassed) {
+    lines.push(u.progCertReady);
+  } else if (prog.complete) {
+    lines.push(u.progCertQuiz);
+  } else {
+    lines.push(
+      fill(u.progCertProgress, {
+        bar: progressBar(prog.pct),
+        pct: prog.pct,
+        done: prog.done,
+        total: prog.total,
+        remaining: prog.total - prog.done,
+      })
+    );
+  }
+
   lines.push('');
   if (CTX.earnedBadges.length) {
     lines.push(u.progBadgesTitle);
@@ -853,8 +881,14 @@ function deriveActions(session, content) {
       if (!session.track) return [act('🧒 Youth', '1'), act('🧑 Adult', '2'), act('🔎 Explore', '3')];
       // 3 tappable reply buttons (the rest of the options stay in the numbered text).
       return [act('▶️ Start', '1'), act('📊 Progress', '2'), act('🏠 Menu', '3')];
-    case 'progress':
+    case 'progress': {
+      // Offer a tap-to-get-certificate button only when the learner is eligible.
+      const cprog = curriculum.trackProgress(content, session.track, CTX.completed);
+      if (cprog.complete && CTX.certQuizPassed) {
+        return [act('🎓 Get certificate', 'CERTIFICATE'), act('🏠 Menu', 'MENU')];
+      }
       return [act('🏠 Menu', 'MENU')];
+    }
     case 'menu': {
       const node = content.nodes[cur.id];
       // Clean, emoji-free labels keep option buttons within WhatsApp's 20-char cap.

@@ -114,6 +114,25 @@ test('a known name skips the prompt and issues immediately on the finishing turn
   assert.ok(images(issued).includes(`/cert/${cert.code}.png`));
 });
 
+test('progress screen shows a certificate progress bar + remaining count (not eligible)', async () => {
+  const uid = 'cert-prog-partial';
+  await onboardYouth(uid);
+  const r = await runtime.processMessage(uid, '2'); // mission → progress
+  assert.match(joined(r), /Your certificate/i);
+  assert.match(joined(r), /to go/i, 'shows how many lessons remain');
+  assert.ok(!r.actions.some((a) => /certificate/i.test(a.label)), 'no cert button when not eligible');
+});
+
+test('progress screen shows "ready" + a Get-certificate button when eligible', async () => {
+  const uid = 'cert-prog-ready';
+  await onboardYouth(uid);
+  completeAllYouthLessons(uid);
+  db.logEvent(uid, 'quizFinished', { track: 'youth', passed: true, score: 15, total: 15 });
+  const r = await runtime.processMessage(uid, '2'); // first progress view → eligible
+  assert.match(joined(r), /ready/i);
+  assert.ok(r.actions.some((a) => /certificate/i.test(a.label)), 'shows Get certificate when eligible');
+});
+
 test('certificate renders to a PNG and the verify page shows the details', async () => {
   const cert = { name: 'Haile Gebrselassie', track: 'adult', code: 'ZEGA-ABCD2345', issued_at: '2026-07-03 09:00:00' };
   const png = await certs.renderPng(cert, 'https://example.com');

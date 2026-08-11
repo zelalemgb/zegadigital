@@ -65,12 +65,17 @@ async function processMessageInner(userId, input, opts = {}) {
   // 2) Build read-only context for the engine.
   const content = getContent(session.lang);
   const priorAssessments = await db.getAssessments(userId);
+  // Whether the learner has passed their track quiz — the other certificate
+  // requirement besides finishing every lesson. Lets the progress screen show a
+  // truthful "certificate ready / N lessons to go" state.
+  const certQuizPassed = session.track ? (await db.getPassedQuizTracks(userId)).has(session.track) : false;
   const ctx = {
     profile,
     completed,
     earnedBadges: badgeDisplay(content, profile.track || 'youth', earnedSet),
     baselineDone: priorAssessments.some((a) => a.kind === 'baseline'),
     endlineDone: priorAssessments.some((a) => a.kind === 'endline'),
+    certQuizPassed,
   };
 
   // 3) Run the engine.

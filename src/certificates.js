@@ -54,8 +54,8 @@ const SANS = "'DejaVu Sans', 'Noto Sans Ethiopic', sans-serif";
 const TEMPLATE_DIR = path.join(__dirname, '..', 'public', 'img', 'cert');
 const TEMPLATES = {
   en: { file: 'cirt_English.jpeg', name: [652, 415], date: [880, 760] },
-  am: { file: 'cirt_Amharic.jpeg', name: [648, 415], date: [950, 745] },
-  om: { file: 'cirt_Oromiffa.jpeg', name: [648, 415], date: [950, 745] },
+  am: { file: 'cirt_Amharic.jpeg', name: [648, 415], date: [950, 728] },
+  om: { file: 'cirt_Oromiffa.jpeg', name: [648, 415], date: [950, 728] },
 };
 
 // A transparent overlay with the learner name, the date, and a small verify-ID

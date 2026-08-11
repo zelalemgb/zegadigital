@@ -133,6 +133,17 @@ test('progress screen shows "ready" + a Get-certificate button when eligible', a
   assert.ok(r.actions.some((a) => /certificate/i.test(a.label)), 'shows Get certificate when eligible');
 });
 
+test('Progress & certificate is reachable from the mid-lesson main menu (reply "3")', async () => {
+  const uid = 'cert-menu-progress';
+  await onboardYouth(uid);
+  // Mid-flow, a learner replies MENU to open the top-level main menu…
+  const menu = await runtime.processMessage(uid, 'MENU');
+  assert.match(joined(menu), /Progress & certificate/, 'main menu lists the new option');
+  // …and option 3 opens the progress & certificate screen.
+  const prog = await runtime.processMessage(uid, '3');
+  assert.match(joined(prog), /Your certificate/i, 'option 3 opens the progress screen');
+});
+
 test('certificate renders to a PNG and the verify page shows the details', async () => {
   const cert = { name: 'Haile Gebrselassie', track: 'adult', code: 'ZEGA-ABCD2345', issued_at: '2026-07-03 09:00:00' };
   const png = await certs.renderPng(cert, 'https://example.com');

@@ -219,6 +219,7 @@ module.exports = {
       options: [
         { label: '🧒 Mojula Dargaggootaa (Umurii 13–17)' },
         { label: '🧑 Mojula Ga’eessootaa (Umurii 18+)' },
+        { label: '🎓 Guddina & waraqaa ragaa' },
         { label: '🌍 Filannoo afaanii' },
         { label: 'ℹ️ Waayee Robotii Zeegaa' },
         { label: '📖 Hiikaa Jechootaa' },

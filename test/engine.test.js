@@ -168,7 +168,7 @@ test("Continue after a module's last lesson goes to the NEXT module's menu", () 
 
 test('every menu option points to a resolvable target', () => {
   const content = getContent('en');
-  const specials = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
+  const specials = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'PROGRESS', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
   for (const [id, node] of Object.entries(content.nodes)) {
     if (node.type !== 'menu') continue;
     for (const opt of node.options) {

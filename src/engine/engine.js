@@ -23,7 +23,7 @@ const curriculum = require('../curriculum');
 const { levelInfo, LEVELS } = require('../gamification/xp');
 const { stripEmoji, fill } = require('../util/text');
 
-const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
+const SPECIAL = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'PROGRESS', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);
 const PASS_RATIO = 0.7;
 // Bump when the icon-banner design changes so WhatsApp re-fetches the header.
 const BANNER_VERSION = 2;
@@ -587,6 +587,16 @@ function goTo(session, content, target, prefix = []) {
   if (target === 'GLOSSARY') {
     session.cursor = { type: 'glossary' };
     return out(session, [...prefix, renderGlossary(content.glossary)]);
+  }
+  if (target === 'PROGRESS') {
+    // Progress & certificate is reachable from the main menu (so learners
+    // mid-lesson can find it), but it needs an active track to have anything
+    // to show — otherwise fall back to the mission screen.
+    if (session.track) {
+      session.cursor = { type: 'progress' };
+      return out(session, [...prefix, renderProgress(session, content)]);
+    }
+    return goTo(session, content, 'HOME', prefix);
   }
   if (target === 'YOUTH_QUIZ') return startQuiz(session, content, 'youth');
   if (target === 'ADULT_QUIZ') return startQuiz(session, content, 'adult');

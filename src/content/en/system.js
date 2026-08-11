@@ -179,11 +179,12 @@ module.exports = {
       options: [
         { input: '1', label: '1️⃣ 🧒 Youth Module (Ages 13–17)', next: 'youth.menu' },
         { input: '2', label: '2️⃣ 🧑 Adult Module (Ages 18+)', next: 'adult.menu' },
-        { input: '3', label: '3️⃣ 🌍 Language selection', next: 'LANGUAGE' },
-        { input: '4', label: '4️⃣ ℹ️ About Zega bot', next: 'about' },
-        { input: '5', label: '5️⃣ 📖 Glossary', next: 'GLOSSARY' },
-        { input: '6', label: '6️⃣ 🆘 Help & Resources', next: 'help.menu' },
-        { input: '7', label: '7️⃣ ❌ Exit', next: 'EXIT' },
+        { input: '3', label: '3️⃣ 🎓 Progress & certificate', next: 'PROGRESS' },
+        { input: '4', label: '4️⃣ 🌍 Language selection', next: 'LANGUAGE' },
+        { input: '5', label: '5️⃣ ℹ️ About Zega bot', next: 'about' },
+        { input: '6', label: '6️⃣ 📖 Glossary', next: 'GLOSSARY' },
+        { input: '7', label: '7️⃣ 🆘 Help & Resources', next: 'help.menu' },
+        { input: '8', label: '8️⃣ ❌ Exit', next: 'EXIT' },
       ],
     },
 

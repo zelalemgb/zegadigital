@@ -171,6 +171,7 @@ module.exports = {
       liteOff: '🖼️ Barnootni suuraa banameera. Barreeffama qofaatti jijjiiruun data qusachuuf yeroo barbaaddetti LITE jedhi.',
       certEarnedAskName: "🎓 *Baga gammadde!* Barnoota hunda xumurtee qormaata dabarte — waraqaa ragaa Dijitaala Zeegaa argatteetta!\n\nMaqaa isa irratti barreeffamu ergi (ykn SKIP).",
       certNameInvalid: 'Maaloo maqaa waraqaa ragaa kee irratti barreeffamu ergi (qubee 2–48), ykn SKIP.',
+      certConfirmName: "📝 Waraqaan ragaa kee maqaa kanaan maxxanfama:\n\n*{{name}}*\n\nSirriidhaa? Mirkaneessuuf *YES* ergi, ykn jijjiiruuf maqaa sirrii qofa barreessi.",
       certGenerating: '🎉 Gaarii, {{name}}! Waraqaan ragaa kee kunooti:',
       certCaption: '🎓 Dijitaala Zeegaa — Waraqaa Ragaa Xumuraa',
       certVerify: "✅ Kana ol kaa'i! Namni kamiyyuu asitti mirkaneessuu danda'a:\n{{url}}",

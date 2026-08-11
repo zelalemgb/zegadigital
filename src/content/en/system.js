@@ -160,6 +160,7 @@ module.exports = {
       // Certificate of completion
       certEarnedAskName: "🎓 *Congratulations!* You've finished every lesson and passed the quiz — you've earned your Zega Digital certificate!\n\nWhat name should we print on it? Reply with your full name (or SKIP).",
       certNameInvalid: 'Please reply with the name to print on your certificate (2–48 characters), or SKIP.',
+      certConfirmName: "📝 Your certificate will be printed with the name:\n\n*{{name}}*\n\nIs this correct? Reply *YES* to confirm, or just type the correct name to change it.",
       certGenerating: '🎉 Perfect, {{name}}! Here is your certificate:',
       certCaption: '🎓 Zega Digital — Certificate of Completion',
       certVerify: '✅ Keep this! Anyone can verify it at:\n{{url}}',

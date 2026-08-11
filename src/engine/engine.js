@@ -165,6 +165,8 @@ function route(session, content, text, cmd) {
       return handleAssessment(session, content, cur, cmd);
     case 'certname':
       return handleCertName(session, content, cur, text, cmd);
+    case 'certconfirm':
+      return handleCertConfirm(session, content, cur, text, cmd);
     default:
       return goTo(session, content, 'HOME');
   }
@@ -282,9 +284,32 @@ function handleCertName(session, content, cur, text, cmd) {
   }
   const name = sanitizeName(text);
   if (!name) return out(session, [u.certNameInvalid]);
-  emit('certificateReady', { name, track: cur.track });
-  session.cursor = { type: 'home' }; // runtime appends the certificate image next
-  return out(session, [fill(u.certGenerating, { name })]);
+  // Confirm the exact spelling before it's permanently printed on the certificate.
+  session.cursor = { type: 'certconfirm', track: cur.track, name };
+  return out(session, [fill(u.certConfirmName, { name })]);
+}
+
+// The learner reviews how their name will be printed. YES issues it; anything
+// else (except skip/nav) is treated as a corrected name and re-confirmed.
+function handleCertConfirm(session, content, cur, text, cmd) {
+  const u = content.strings.ui;
+  if (cmd === 'MENU' || cmd === 'HOME' || cmd === 'SKIP') {
+    return goTo(session, content, cmd === 'MENU' ? 'MAIN' : 'HOME', [u.certSkipped]);
+  }
+  if (cmd === 'YES' || cmd === 'Y' || cmd === 'CONFIRM' || cmd === 'OK') {
+    emit('certificateReady', { name: cur.name, track: cur.track });
+    session.cursor = { type: 'home' }; // runtime appends the certificate image next
+    return out(session, [fill(u.certGenerating, { name: cur.name })]);
+  }
+  if (cmd === 'NO' || cmd === 'N' || cmd === 'EDIT' || cmd === 'CHANGE') {
+    session.cursor = { type: 'certname', track: cur.track };
+    return out(session, [u.certEarnedAskName]);
+  }
+  // Any other reply is a corrected spelling → re-confirm the new name.
+  const name = sanitizeName(text);
+  if (!name) return out(session, [u.certNameInvalid]);
+  session.cursor = { type: 'certconfirm', track: cur.track, name };
+  return out(session, [fill(u.certConfirmName, { name })]);
 }
 
 // ── HOME / mission screen ────────────────────────────────────────────────────
@@ -930,6 +955,8 @@ function deriveActions(session, content) {
       return [act('A', 'A'), act('B', 'B'), act('C', 'C'), act('D', 'D')];
     case 'certname':
       return [act('Skip', 'SKIP')];
+    case 'certconfirm':
+      return [act('✅ Yes, print it', 'YES'), act('✏️ Change name', 'EDIT'), act('Skip', 'SKIP')];
     default:
       return [];
   }

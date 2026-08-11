@@ -75,8 +75,13 @@ test('certificate is issued after lessons + quiz, captures a name, returns image
   assert.match(joined(ask), /Congratulations|name/i);
   assert.equal(db.getCertificate(uid, 'youth'), null); // not issued until named
 
-  // Provide the name → certificate issued with an image + verify link.
-  const done = await runtime.processMessage(uid, 'Abebe Bikila');
+  // Provide the name → asks to confirm the spelling first (nothing issued yet).
+  const confirm = await runtime.processMessage(uid, 'Abebe Bikila');
+  assert.match(joined(confirm), /correct|Abebe Bikila/i, 'asks to confirm the name');
+  assert.equal(db.getCertificate(uid, 'youth'), null, 'not issued until confirmed');
+
+  // Confirm → certificate issued with an image + verify link.
+  const done = await runtime.processMessage(uid, 'YES');
   const cert = db.getCertificate(uid, 'youth');
   assert.ok(cert, 'certificate row created');
   assert.equal(cert.name, 'Abebe Bikila');
@@ -112,6 +117,31 @@ test('a known name skips the prompt and issues immediately on the finishing turn
   assert.ok(cert);
   assert.equal(cert.name, 'Tirunesh Dibaba'); // used the stored name, no prompt
   assert.ok(images(issued).includes(`/cert/${cert.code}.png`));
+});
+
+test('name-confirmation step: a corrected spelling is re-confirmed, then issued', async () => {
+  const uid = 'cert-confirm';
+  await onboardYouth(uid);
+  completeAllYouthLessons(uid);
+  db.logEvent(uid, 'quizFinished', { track: 'youth', passed: true, score: 15, total: 15 });
+
+  await runtime.processMessage(uid, 'CERTIFICATE'); // eligible, no name → asks for name
+  // Typo'd name → asks to confirm; nothing issued.
+  const c1 = await runtime.processMessage(uid, 'Abebi Bikila');
+  assert.match(joined(c1), /Abebi Bikila/, 'echoes the typed name for confirmation');
+  assert.equal(db.getCertificate(uid, 'youth'), null);
+
+  // Instead of YES, the learner types the corrected name → re-confirm with the fix.
+  const c2 = await runtime.processMessage(uid, 'Abebe Bikila');
+  assert.match(joined(c2), /Abebe Bikila/, 're-confirms the corrected name');
+  assert.equal(db.getCertificate(uid, 'youth'), null, 'still not issued until YES');
+
+  // Confirm → issued with the corrected spelling.
+  const done = await runtime.processMessage(uid, 'YES');
+  const cert = db.getCertificate(uid, 'youth');
+  assert.ok(cert, 'certificate issued after confirmation');
+  assert.equal(cert.name, 'Abebe Bikila', 'uses the corrected name, not the typo');
+  assert.ok(images(done).includes(`/cert/${cert.code}.png`));
 });
 
 test('progress screen shows a certificate progress bar + remaining count (not eligible)', async () => {

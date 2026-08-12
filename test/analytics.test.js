@@ -6,6 +6,8 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const runtime = require('../src/runtime');
 const analytics = require('../src/analytics');
+const db = require('../src/store/db');
+const certs = require('../src/certificates');
 const { getContent } = require('../src/content');
 
 const DAY = '2026-08-01';
@@ -69,6 +71,23 @@ test('analytics.summary reflects the funnel, gain, checks and reach', async () =
   // Activity has been logged (activeToday is keyed on the real event date, so
   // assert the date-independent "ever active" count instead).
   assert.ok(a.reach.distinctActive >= 2);
+});
+
+test('summary counts certificates earned (issued rows) and shows the funnel stage', async () => {
+  // No certificates issued yet by the journeys above.
+  const before = await analytics.summary({ today: DAY });
+  assert.equal(before.certificates.issued, 0);
+  assert.equal(before.certificates.learners, 0);
+  assert.equal(before.funnel.find((f) => f.stage === 'Earned certificate').count, 0);
+
+  // Issue one certificate for learner-1 (youth).
+  await db.issueCertificate(certs.generateCode(), 'learner-1', 'Abebe Bikila', 'youth', 'en');
+
+  const after = await analytics.summary({ today: DAY });
+  assert.equal(after.certificates.issued, 1, 'one certificate issued');
+  assert.equal(after.certificates.learners, 1, 'one distinct learner certified');
+  assert.equal(after.funnel.find((f) => f.stage === 'Earned certificate').count, 1);
+  assert.ok(after.certificates.byTrack.find((t) => t.track === 'youth').c === 1);
 });
 
 test('skipping the baseline records no assessment for that user', async () => {

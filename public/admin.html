@@ -123,6 +123,7 @@ function render(data) {
       ${kpi("Active today", s.reach.activeToday, s.reach.distinctActive + " ever active")}
       ${kpi("Lessons done", learners.reduce((n, l) => n + l.lessonsDone, 0), s.reach.startedLesson + " started ≥1")}
       ${kpi("Track completions", s.reach.completedTrack, "finished a full track")}
+      ${kpi("Certificates earned", (s.certificates ? s.certificates.learners : 0), (s.certificates && s.certificates.byTrack && s.certificates.byTrack.length ? s.certificates.byTrack.map((t) => t.track + ": " + t.c).join(" · ") : "completed + passed the quiz"))}
       ${kpi("Quiz pass rate", pct(s.quizzes.passRate), s.quizzes.attempts + " attempts")}
       ${kpi("Avg learning gain", g.avgGainPoints == null ? "—" : "+" + g.avgGainPoints + " pts", g.bothTaken + " took both tests")}
     </div>

@@ -80,6 +80,14 @@ async function summary(opts = {}) {
   // ── Learning gain (headline impact) ─────────────────────────────────────
   const learning = await learningGain();
 
+  // ── Certificates earned (finished a track + passed the quiz, name confirmed) ─
+  // One row per learner+track, so COUNT(*) is certificates issued and
+  // COUNT(DISTINCT user_id) is how many people are certified.
+  const certAgg = (await rows('SELECT COUNT(*) c, COUNT(DISTINCT user_id) u FROM certificates'))[0];
+  const certByTrack = await rows('SELECT track, COUNT(*) c FROM certificates GROUP BY track');
+  const certificatesIssued = certAgg.c || 0;
+  const certifiedLearners = certAgg.u || 0;
+
   // ── Badges & reminders ──────────────────────────────────────────────────
   const badgeRows = await rows('SELECT badge_id, COUNT(*) c FROM badges GROUP BY badge_id ORDER BY c DESC');
   const badgesAwarded = badgeRows.reduce((n, b) => n + b.c, 0);
@@ -93,6 +101,7 @@ async function summary(opts = {}) {
       { stage: 'Picked track', count: pickedTrack },
       { stage: 'Completed ≥1 lesson', count: startedLesson },
       { stage: 'Completed track', count: completedTrack },
+      { stage: 'Earned certificate', count: certifiedLearners },
     ],
     xp: { total: totalXp, avg: users ? Math.round(totalXp / users) : 0, byLevel },
     streaks: { avg: round1(avg(streaks)), max: streaks.length ? Math.max(...streaks) : 0, buckets: streakBuckets },
@@ -105,6 +114,7 @@ async function summary(opts = {}) {
     },
     checks: { answered: checksAnswered, accuracy: checkAccuracy },
     learningGain: learning,
+    certificates: { issued: certificatesIssued, learners: certifiedLearners, byTrack: certByTrack },
     badges: { awarded: badgesAwarded, byBadge: badgeRows },
     reminders: { optedIn, nudgesSent },
   };

@@ -26,6 +26,15 @@ const config = {
   // single Render instance sharing one SQLite disk covers both).
   runScheduler: process.env.RUN_SCHEDULER === 'true',
   schedulerIntervalMs: parseInt(process.env.SWEEP_MS, 10) || 15 * 60 * 1000,
+  // Max nudge sends in flight per sweep — keeps large sweeps from a thundering
+  // herd while staying within WhatsApp's throughput.
+  nudgeConcurrency: parseInt(process.env.NUDGE_CONCURRENCY, 10) || 8,
+  // Go-live gate for proactive sends. The stage templates (zega_almost_there,
+  // zega_quiz_left, zega_cert_ready, zega_reengagement) must be APPROVED in
+  // WhatsApp Manager first. Until this is 'true' the scheduler runs in DRY-RUN
+  // (logs what it would send) even when WhatsApp is configured — so we can ship
+  // the logic, watch opt-ins grow, and flip sending on once Meta approves.
+  nudgeTemplatesReady: process.env.NUDGE_TEMPLATES_READY === 'true',
 
   // Public base URL where lesson images are hosted (e.g. https://cdn.example.com).
   // Lesson `image` paths like "/img/passwords.png" are resolved against this when

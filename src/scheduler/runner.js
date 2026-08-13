@@ -21,12 +21,17 @@ function now() {
 }
 
 async function sender(userId, nudge, profile) {
-  if (!config.whatsapp.isConfigured) {
-    console.log(`   [DRY-RUN] → ${userId} (${nudge.type}): ${nudge.message.replace(/\n/g, ' ')}`);
-    return;
+  // DRY-RUN until WhatsApp is configured AND the stage templates are approved
+  // (config.nudgeTemplatesReady). Prevents blasting the API with un-approved
+  // template names before go-live.
+  if (!config.whatsapp.isConfigured || !config.nudgeTemplatesReady) {
+    const why = !config.whatsapp.isConfigured ? 'WhatsApp not configured' : 'templates not marked ready';
+    console.log(`   [DRY-RUN: ${why}] → ${userId} (${nudge.type}): ${nudge.message.replace(/\n/g, ' ')}`);
+    return false; // signal "not delivered" so the sweep leaves state untouched
   }
   const lang = LANG_CODES[profile.lang] || 'en';
   await wa.sendTemplate(userId, nudge.template.name, lang, nudge.template.params, nudge.button.value);
+  return true;
 }
 
 async function sweep() {

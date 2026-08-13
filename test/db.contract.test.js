@@ -73,6 +73,7 @@ for (const backend of backends) {
         lastNudgeDay: '2026-07-16',
         remindersPrompted: true,
         lite: true,
+        nudgeIgnored: 2,
         resume: { id: 'youth.ai.understanding', index: 2 },
         session: { cursor: { type: 'lesson', id: 'youth.ai.understanding' }, lang: 'en' },
       });
@@ -85,8 +86,42 @@ for (const backend of backends) {
       assert.equal(got.optInReminders, true);
       assert.equal(got.reminderHour, 8);
       assert.equal(got.lite, true);
+      assert.equal(got.nudgeIgnored, 2);
       assert.deepEqual(got.resume, { id: 'youth.ai.understanding', index: 2 });
       assert.deepEqual(got.session, { cursor: { type: 'lesson', id: 'youth.ai.understanding' }, lang: 'en' });
+    });
+
+    it('profilesDueForNudge filters to opted-in, idle, un-nudged candidates; recordNudgeSent bumps the backoff', async () => {
+      const day = '2026-08-20';
+      // Eligible: opted in, has a track, idle today, not nudged today.
+      const due = uid('due');
+      const pd = await repo.getOrCreateProfile(due, 'en');
+      Object.assign(pd, { track: 'youth', optInReminders: true, reminderHour: 19, lastActiveDay: '2026-08-19' });
+      await repo.saveProfile(pd);
+      // Not opted in → excluded.
+      const off = uid('off');
+      const po = await repo.getOrCreateProfile(off, 'en');
+      Object.assign(po, { track: 'youth', optInReminders: false, lastActiveDay: '2026-08-19' });
+      await repo.saveProfile(po);
+      // Active today → excluded.
+      const act = uid('act');
+      const pa = await repo.getOrCreateProfile(act, 'en');
+      Object.assign(pa, { track: 'youth', optInReminders: true, lastActiveDay: day });
+      await repo.saveProfile(pa);
+
+      const ids = new Set((await repo.profilesDueForNudge(day, 20)).map((p) => p.userId));
+      assert.ok(ids.has(due), 'eligible learner is a candidate');
+      assert.ok(!ids.has(off), 'opted-out learner is excluded');
+      assert.ok(!ids.has(act), 'learner active today is excluded');
+
+      // recordNudgeSent stamps the day and increments the ignored counter.
+      await repo.recordNudgeSent(due, day);
+      const after = await repo.getOrCreateProfile(due, 'en');
+      assert.equal(after.lastNudgeDay, day);
+      assert.equal(after.nudgeIgnored, 1);
+      // Now excluded because already nudged today.
+      const ids2 = new Set((await repo.profilesDueForNudge(day, 20)).map((p) => p.userId));
+      assert.ok(!ids2.has(due), 'not re-selected after being nudged today');
     });
 
     it('lesson progress is an idempotent set', async () => {

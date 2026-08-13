@@ -45,8 +45,10 @@ app.post('/api/message', async (req, res) => {
 // preview it on demand). In production the scheduler decides timing.
 app.post('/api/nudge', async (req, res) => {
   const id = req.body.userId || 'web';
-  const nudge = await runtime.buildNudgeForUser(id, req.body.type);
-  res.json(nudge || { message: 'Pick a track first, then I can nudge you about your next lesson.' });
+  // Preview the stage-based nudge this learner would get right now (buildNudge
+  // derives the funnel stage from their progress; no type needed).
+  const nudge = await runtime.buildNudgeForUser(id);
+  res.json(nudge || { message: 'No nudge right now — pick a track and make some progress, and the stage-based reminder will appear here.' });
 });
 
 // Program KPI dashboard (dev): JSON + a simple HTML page.

@@ -56,6 +56,7 @@ async function init() {
       name             TEXT,
       lite             BOOLEAN DEFAULT FALSE,
       resume           TEXT,
+      nudge_ignored    INTEGER DEFAULT 0,
       session          TEXT,
       created_at       TIMESTAMPTZ DEFAULT now(),
       updated_at       TIMESTAMPTZ DEFAULT now()
@@ -84,9 +85,11 @@ async function init() {
       issued_at TIMESTAMPTZ DEFAULT now(), lang TEXT,
       UNIQUE (user_id, track)
     );
+    -- Lightweight migration for DBs created before the backoff counter existed.
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS nudge_ignored INTEGER DEFAULT 0;
     -- Indexes that matter at scale (the scheduler's "due" query, event lookups).
     CREATE INDEX IF NOT EXISTS idx_events_user_type ON events (user_id, type);
-    CREATE INDEX IF NOT EXISTS idx_profiles_due ON profiles (opt_in_reminders, last_nudge_day, reminder_hour);
+    CREATE INDEX IF NOT EXISTS idx_profiles_due ON profiles (opt_in_reminders, last_active_day, reminder_hour);
   `);
 }
 
@@ -120,6 +123,7 @@ function rowToProfile(row) {
     name: row.name || null,
     lite: Boolean(row.lite),
     resume: row.resume ? safeParse(row.resume) : null,
+    nudgeIgnored: row.nudge_ignored || 0,
     session: row.session ? safeParse(row.session) : null,
   };
 }
@@ -140,14 +144,14 @@ async function saveProfile(p) {
        lang = $1, track = $2, xp = $3, level_index = $4, streak = $5,
        longest_streak = $6, last_active_day = $7, opt_in_reminders = $8,
        reminder_hour = $9, last_nudge_day = $10, reminders_prompted = $11,
-       lite = $12, resume = $13, session = $14, updated_at = now()
-     WHERE user_id = $15`,
+       lite = $12, resume = $13, nudge_ignored = $14, session = $15, updated_at = now()
+     WHERE user_id = $16`,
     [
       p.lang, p.track, p.xp, p.levelIndex, p.streak,
       p.longestStreak, p.lastActiveDay, Boolean(p.optInReminders),
       p.reminderHour, p.lastNudgeDay, Boolean(p.remindersPrompted),
       Boolean(p.lite), p.resume ? JSON.stringify(p.resume) : null,
-      p.session ? JSON.stringify(p.session) : null, p.userId,
+      p.nudgeIgnored || 0, p.session ? JSON.stringify(p.session) : null, p.userId,
     ]
   );
 }
@@ -159,6 +163,22 @@ async function allProfiles() {
 
 async function setLastNudge(userId, day) {
   await q('UPDATE profiles SET last_nudge_day = $1 WHERE user_id = $2', [day, userId]);
+}
+
+async function recordNudgeSent(userId, day) {
+  await q('UPDATE profiles SET last_nudge_day = $1, nudge_ignored = nudge_ignored + 1 WHERE user_id = $2', [day, userId]);
+}
+
+async function profilesDueForNudge(day, hour) {
+  const { rows } = await q(
+    `SELECT * FROM profiles
+     WHERE opt_in_reminders = TRUE AND track IS NOT NULL
+       AND (last_active_day IS NULL OR last_active_day <> $1)
+       AND (last_nudge_day IS NULL OR last_nudge_day <> $1)
+       AND reminder_hour <= $2`,
+    [day, hour]
+  );
+  return rows.map(rowToProfile);
 }
 
 async function setName(userId, name) {
@@ -290,6 +310,8 @@ module.exports = {
   saveProfile,
   allProfiles,
   setLastNudge,
+  recordNudgeSent,
+  profilesDueForNudge,
   getCompletedLessons,
   markLessonComplete,
   getEarnedBadges,

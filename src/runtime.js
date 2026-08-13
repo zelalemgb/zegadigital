@@ -61,6 +61,9 @@ async function processMessageInner(userId, input, opts = {}) {
     profile.xp = (profile.xp || 0) + AWARDS.dailyCheckIn;
     await db.logEvent(userId, 'dailyCheckIn', { streak: profile.streak });
   }
+  // Any inbound message means they re-engaged → clear the nudge-backoff counter
+  // so the next quiet spell starts the fatigue ladder fresh.
+  profile.nudgeIgnored = 0;
 
   // 2) Build read-only context for the engine.
   const content = getContent(session.lang);
@@ -175,9 +178,12 @@ async function processMessageInner(userId, input, opts = {}) {
   const justProgressed = completedThisTurn || Boolean(quizFinishedEvent);
   const certMsgs = await handleCertificates(userId, profile, session, content, completed, result.events, justProgressed);
 
-  // One-time opt-in nudge after the user finishes their first lesson.
+  // Prominent one-time opt-in: prompt as soon as a learner picks a track (or, as
+  // a fallback, when they finish their first lesson) — reaching far more learners
+  // than the old first-lesson-only prompt, so progress nudges actually land.
+  const pickedTrackNow = result.events.some((e) => e.type === 'trackSelected');
   let optInPrompt = null;
-  if (completedThisTurn && !profile.optInReminders && !profile.remindersPrompted) {
+  if ((pickedTrackNow || completedThisTurn) && !profile.optInReminders && !profile.remindersPrompted) {
     profile.remindersPrompted = true;
     optInPrompt = content.strings.ui.optInPrompt;
   }
@@ -333,41 +339,71 @@ async function startConversationInner(userId, opts = {}) {
   return processMessageInner(userId, profile.track ? 'CONTINUE' : 'Hi', opts);
 }
 
-/** Build the nudge a given user would receive (or null if not ready). */
-async function buildNudgeForUser(userId, type) {
+/** Gather everything the nudge logic needs to decide a learner's stage. */
+async function nudgeContextFor(profile) {
+  const content = getContent(profile.lang);
+  const completed = await db.getCompletedLessons(profile.userId);
+  const cert = {
+    quizPassed: (await db.getPassedQuizTracks(profile.userId)).has(profile.track),
+    certIssued: Boolean(await db.getCertificate(profile.userId, profile.track)),
+  };
+  return { content, completed, cert };
+}
+
+/** Build the nudge a given user would receive right now (or null if none applies). */
+async function buildNudgeForUser(userId, now = { hour: 23, day: todayStr() }) {
   const profile = await db.getOrCreateProfile(userId, config.defaultLang);
   if (!profile.track) return null; // nothing to resume yet
-  const content = getContent(profile.lang);
-  const completed = await db.getCompletedLessons(userId);
-  return nudges.buildNudge(profile, content, completed, type);
+  const { content, completed, cert } = await nudgeContextFor(profile);
+  return nudges.buildNudge(profile, content, completed, cert, now);
 }
 
 /**
- * Run one proactive sweep: find users due a nudge `now`, build each message and
- * hand it to `send(userId, nudge, profile)`. Marks each user as nudged today so
- * they aren't messaged twice. Returns the list of { userId, type } nudged.
+ * Run one proactive sweep. Pulls only the *candidate* set from the DB (opted-in,
+ * idle today, past their hour, not yet nudged today) rather than the whole table,
+ * then applies the fatigue backoff and works out each learner's funnel stage.
+ * Sends run with bounded concurrency so a sweep scales to a large user base
+ * without a thundering herd. Returns the list of { userId, type } actually sent.
  *
  *   now = { hour, day }   send = async (userId, nudge, profile) => {}
  */
 async function runNudgeSweep(now, send) {
-  const due = nudges.selectDueNudges(await db.allProfiles(), now);
-  for (const item of due) {
-    const profile = await db.getOrCreateProfile(item.userId, config.defaultLang);
-    const content = getContent(profile.lang);
-    const completed = await db.getCompletedLessons(item.userId);
-    const nudge = nudges.buildNudge(profile, content, completed, item.type);
+  const candidates = await db.profilesDueForNudge(now.day, now.hour);
+  const sent = [];
+  await mapWithConcurrency(candidates, config.nudgeConcurrency, async (profile) => {
+    if (!nudges.backoffAllows(profile, now)) return; // paused / weekly band
+    const { content, completed, cert } = await nudgeContextFor(profile);
+    const nudge = nudges.buildNudge(profile, content, completed, cert, now);
+    if (!nudge) return; // no funnel stage worth a message (e.g. certified, on-track)
     try {
-      await send(item.userId, nudge, profile);
-      await db.withUserLock(item.userId, async () => {
-        await db.setLastNudge(item.userId, now.day);
-        await db.logEvent(item.userId, 'nudgeSent', { type: item.type });
+      // A send callback may return `false` to mean "previewed, not delivered"
+      // (DRY-RUN) — in which case we leave last_nudge_day / backoff untouched.
+      const delivered = await send(profile.userId, nudge, profile);
+      if (delivered === false) return;
+      await db.withUserLock(profile.userId, async () => {
+        await db.recordNudgeSent(profile.userId, now.day);
+        await db.logEvent(profile.userId, 'nudgeSent', { type: nudge.type });
       });
+      sent.push({ userId: profile.userId, type: nudge.type });
     } catch (err) {
       // Leave last_nudge_day unset so we retry on the next sweep.
-      await db.logEvent(item.userId, 'nudgeFailed', { type: item.type, error: String(err && err.message) });
+      await db.logEvent(profile.userId, 'nudgeFailed', { type: nudge.type, error: String(err && err.message) });
     }
-  }
-  return due;
+  });
+  return sent;
+}
+
+/** Run `fn` over `items` with at most `limit` in flight at once. */
+async function mapWithConcurrency(items, limit, fn) {
+  const cap = Math.max(1, limit || 1);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(cap, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      await fn(items[idx], idx);
+    }
+  });
+  await Promise.all(workers);
 }
 
 function badgeDisplay(content, track, earnedSet) {

@@ -166,7 +166,7 @@ module.exports = {
       rewardLevelUp: 'Sadarkaa haaraa geesse: {{name}} (sadarkaa {{n}} kan {{count}}).',
       rewardGain: 'Qabxiin kee jalqaba {{before}}% irraa gara {{after}}% amma ga’e',
       rewardGainProgress: ' — kun guddina qabxii {{delta}} ti. Hojii gaarii!',
-      optInPrompt: 'Guyyaa guyyaan yaadachiisa argachuu barbaaddaa? REMIND ON jedhi (ykn sa’a 7pmf REMIND 19).',
+      optInPrompt: "🔔 Akka guddina kee hin dhabnee fi waraqaa ragaa kee dafteessee argattuuf yaadachiisa gaarii barbaaddaa? Banuuf *REMIND ON* jedhi (ykn darbuuf *REMIND OFF*). Yeroo barbaaddetti dhaabuu dandeessa.",
       liteOn: '📶 Haala data qusachuu banameera. Barnootni data qusachuuf barreeffama qofaan dhufa. Gara barnoota suuraatti deebi’uuf yeroo barbaaddetti CARDS jedhi.',
       liteOff: '🖼️ Barnootni suuraa banameera. Barreeffama qofaatti jijjiiruun data qusachuuf yeroo barbaaddetti LITE jedhi.',
       certEarnedAskName: "🎓 *Baga gammadde!* Barnoota hunda xumurtee qormaata dabarte — waraqaa ragaa Dijitaala Zeegaa argatteetta!\n\nMaqaa isa irratti barreeffamu ergi (ykn SKIP).",

@@ -84,6 +84,10 @@ async function setLastNudge(u, d) {
   await primary((s) => s.setLastNudge(u, d));
   await mirror((s) => s.setLastNudge(u, d), 'setLastNudge');
 }
+async function recordNudgeSent(u, d) {
+  await primary((s) => s.recordNudgeSent(u, d));
+  await mirror((s) => s.recordNudgeSent(u, d), 'recordNudgeSent');
+}
 
 // Read+write: ensure the row exists in BOTH, return from the read authority.
 async function getOrCreateProfile(userId, lang) {
@@ -99,6 +103,7 @@ async function issueCertificate(code, u, n, t, lang) {
 
 // ── Reads: the authority only ────────────────────────────────────────────────
 const allProfiles = () => READ.allProfiles();
+const profilesDueForNudge = (day, hour) => READ.profilesDueForNudge(day, hour);
 const getCompletedLessons = (u) => READ.getCompletedLessons(u);
 const getEarnedBadges = (u) => READ.getEarnedBadges(u);
 const getAssessments = (u) => READ.getAssessments(u);
@@ -122,6 +127,8 @@ module.exports = {
   recordCheckResult,
   setName,
   setLastNudge,
+  recordNudgeSent,
+  profilesDueForNudge,
   getOrCreateProfile,
   issueCertificate,
   allProfiles,

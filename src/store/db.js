@@ -109,7 +109,10 @@ ensureColumn('profiles', 'reminders_prompted', 'INTEGER DEFAULT 0');
 ensureColumn('profiles', 'name', 'TEXT'); // learner's name, for certificates
 ensureColumn('profiles', 'lite', 'INTEGER DEFAULT 0'); // data-saver: text lessons, no cards
 ensureColumn('profiles', 'resume', 'TEXT'); // in-progress lesson pointer {id,index} for "continue"
+ensureColumn('profiles', 'nudge_ignored', 'INTEGER DEFAULT 0'); // consecutive un-acted nudges (backoff)
 ensureColumn('certificates', 'lang', 'TEXT'); // language template to render the certificate in
+// Speeds up the proactive-nudge candidate query at scale.
+db.exec('CREATE INDEX IF NOT EXISTS idx_profiles_due ON profiles (opt_in_reminders, last_active_day, reminder_hour)');
 
 // ── Prepared statements ──────────────────────────────────────────────────
 const stmt = {
@@ -122,11 +125,25 @@ const stmt = {
       lang = ?, track = ?, xp = ?, level_index = ?, streak = ?,
       longest_streak = ?, last_active_day = ?, opt_in_reminders = ?,
       reminder_hour = ?, last_nudge_day = ?, reminders_prompted = ?,
-      lite = ?, resume = ?, session = ?, updated_at = datetime('now')
+      lite = ?, resume = ?, nudge_ignored = ?, session = ?, updated_at = datetime('now')
     WHERE user_id = ?
   `),
   allProfiles: db.prepare('SELECT * FROM profiles'),
   setLastNudge: db.prepare('UPDATE profiles SET last_nudge_day = ? WHERE user_id = ?'),
+  // A nudge went out: stamp the day and assume ignored until they return.
+  recordNudgeSent: db.prepare(
+    'UPDATE profiles SET last_nudge_day = ?, nudge_ignored = nudge_ignored + 1 WHERE user_id = ?'
+  ),
+  // Coarse candidate set for a sweep — opted-in, has a track, idle today, not
+  // yet nudged today, and past their reminder hour. Backoff/stage is applied in
+  // JS on this (small) set, so we never load the whole table at scale.
+  dueForNudge: db.prepare(`
+    SELECT * FROM profiles
+    WHERE opt_in_reminders = 1 AND track IS NOT NULL
+      AND (last_active_day IS NULL OR last_active_day <> ?)
+      AND (last_nudge_day IS NULL OR last_nudge_day <> ?)
+      AND reminder_hour <= ?
+  `),
   getProgress: db.prepare('SELECT lesson_id FROM lesson_progress WHERE user_id = ?'),
   addProgress: db.prepare(
     'INSERT OR IGNORE INTO lesson_progress (user_id, lesson_id) VALUES (?, ?)'
@@ -181,6 +198,7 @@ function saveProfile(p) {
     p.remindersPrompted ? 1 : 0,
     p.lite ? 1 : 0,
     p.resume ? JSON.stringify(p.resume) : null,
+    p.nudgeIgnored || 0,
     p.session ? JSON.stringify(p.session) : null,
     p.userId
   );
@@ -192,6 +210,14 @@ function allProfiles() {
 
 function setLastNudge(userId, day) {
   stmt.setLastNudge.run(day, userId);
+}
+
+function recordNudgeSent(userId, day) {
+  stmt.recordNudgeSent.run(day, userId);
+}
+
+function profilesDueForNudge(day, hour) {
+  return stmt.dueForNudge.all(day, day, hour).map(rowToProfile);
 }
 
 function rowToProfile(row) {
@@ -211,6 +237,7 @@ function rowToProfile(row) {
     name: row.name || null,
     lite: Boolean(row.lite),
     resume: row.resume ? safeParse(row.resume) : null,
+    nudgeIgnored: row.nudge_ignored || 0,
     session: row.session ? safeParse(row.session) : null,
   };
 }
@@ -329,6 +356,8 @@ module.exports = {
   saveProfile,
   allProfiles,
   setLastNudge,
+  recordNudgeSent,
+  profilesDueForNudge,
   getCompletedLessons,
   markLessonComplete,
   getEarnedBadges,

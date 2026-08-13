@@ -153,7 +153,7 @@ module.exports = {
       rewardLevelUp: 'You reached a new level: {{name}} (level {{n}} of {{count}}).',
       rewardGain: 'Your score went from {{before}}% at the start to {{after}}% now',
       rewardGainProgress: " — that's {{delta}} points of progress. Well done!",
-      optInPrompt: 'Want a daily reminder to keep your streak going? Reply REMIND ON (or REMIND 19 for a 7pm reminder).',
+      optInPrompt: "🔔 Want a friendly reminder so you don't lose progress and earn your certificate faster? Reply *REMIND ON* to turn it on (or *REMIND OFF* to skip). You can stop anytime.",
       // Data-saver (lite) mode toggle
       liteOn: '📶 Lite mode on. Lessons will come as plain text to save data. Reply CARDS anytime to switch back to picture lessons.',
       liteOff: '🖼️ Picture lessons on. Reply LITE anytime to switch to plain text and save data.',

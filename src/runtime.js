@@ -368,7 +368,10 @@ async function buildNudgeForUser(userId, now = { hour: 23, day: todayStr() }) {
  *   now = { hour, day }   send = async (userId, nudge, profile) => {}
  */
 async function runNudgeSweep(now, send) {
-  const candidates = await db.profilesDueForNudge(now.day, now.hour);
+  // Only nudge learners in a language we currently have approved templates for
+  // (config.nudgeLangs — English-only by default; widen via NUDGE_LANGS).
+  const candidates = (await db.profilesDueForNudge(now.day, now.hour))
+    .filter((p) => config.nudgeLangs.includes(p.lang));
   const sent = [];
   await mapWithConcurrency(candidates, config.nudgeConcurrency, async (profile) => {
     if (!nudges.backoffAllows(profile, now)) return; // paused / weekly band

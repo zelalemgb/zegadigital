@@ -70,6 +70,15 @@ app.get('/ready', async (_req, res) => {
     res.status(503).json({ ready: false, backend: DB_BACKEND, error: err && err.message });
   }
 });
+// Proactive-nudge go-live health — aggregate counts only, no PII. Lets a simple
+// curl confirm reminders are sending (sentToday > 0 after the evening window).
+app.get('/nudge-status', async (_req, res) => {
+  try {
+    res.json(await analytics.nudgeStatus());
+  } catch (err) {
+    res.status(500).json({ error: err && err.message });
+  }
+});
 
 // ── Public landing page (PWA) ─────────────────────────────────────────────
 app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC, 'landing.html')));

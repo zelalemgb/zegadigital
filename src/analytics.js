@@ -229,6 +229,31 @@ async function publicStats() {
   return { learners, lessons, languages: 3, tracks: 2 };
 }
 
+/**
+ * Lightweight go-live health for the proactive nudge system — aggregate counts
+ * only (no PII), safe to expose publicly. `day` defaults to today's UTC date,
+ * which matches the event timestamps (stored in UTC).
+ */
+async function nudgeStatus(day) {
+  const d = day || new Date().toISOString().slice(0, 10);
+  const countToday = async (type) =>
+    (await rows(
+      "SELECT COUNT(*) c FROM events WHERE type = ? AND substr(CAST(ts AS TEXT),1,10) = ?",
+      [type, d]
+    ))[0].c || 0;
+  const sentToday = await countToday('nudgeSent');
+  const failedToday = await countToday('nudgeFailed');
+  const sentTotal = (await rows("SELECT COUNT(*) c FROM events WHERE type = 'nudgeSent'"))[0].c || 0;
+  const lastFail = await rows("SELECT data FROM events WHERE type = 'nudgeFailed' ORDER BY id DESC LIMIT 1");
+  return {
+    day: d,
+    sentToday,
+    failedToday,
+    sentTotal,
+    lastError: lastFail.length ? safe(lastFail[0].data) : null,
+  };
+}
+
 async function learningGain() {
   const all = await rows('SELECT user_id, kind, score, total, id FROM assessments ORDER BY id');
   const byUser = new Map();
@@ -282,4 +307,4 @@ function safe(s) {
   try { return JSON.parse(s); } catch { return null; }
 }
 
-module.exports = { summary, learningGain, lessonBreakdown, learners, publicStats };
+module.exports = { summary, learningGain, lessonBreakdown, learners, publicStats, nudgeStatus };

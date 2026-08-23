@@ -94,6 +94,8 @@
 const $ = (s, r = document) => r.querySelector(s);
 const pct = (n) => (n == null ? "—" : n + "%");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+// Thousands separators for plain numbers; strings (e.g. "100%", "—") pass through.
+const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString("en-US") : n);
 
 function bar(value, max, cls = "") {
   const w = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -102,7 +104,7 @@ function bar(value, max, cls = "") {
 function accClass(a) { return a == null ? "muted" : a >= 80 ? "acc-good" : a >= 60 ? "acc-warn" : "acc-bad"; }
 
 function kpi(label, value, foot = "") {
-  return `<div class="card kpi"><div class="label">${label}</div><div class="value">${value}</div>${foot ? `<div class="foot">${foot}</div>` : ""}</div>`;
+  return `<div class="card kpi"><div class="label">${label}</div><div class="value">${fmt(value)}</div>${foot ? `<div class="foot">${foot}</div>` : ""}</div>`;
 }
 
 function render(data) {
@@ -123,26 +125,26 @@ function render(data) {
 
   app.innerHTML = `
     <div class="grid kpis">
-      ${kpi("Learners", s.reach.users, s.reach.pickedTrack + " picked a track")}
-      ${kpi("Active today", s.reach.activeToday, s.reach.distinctActive + " ever active")}
-      ${kpi("Lessons done", learners.reduce((n, l) => n + l.lessonsDone, 0), s.reach.startedLesson + " started ≥1")}
+      ${kpi("Learners", s.reach.users, fmt(s.reach.pickedTrack) + " picked a track")}
+      ${kpi("Active today", s.reach.activeToday, fmt(s.reach.distinctActive) + " ever active")}
+      ${kpi("Lessons done", learners.reduce((n, l) => n + l.lessonsDone, 0), fmt(s.reach.startedLesson) + " started ≥1")}
       ${kpi("Track completions", s.reach.completedTrack, "finished a full track")}
-      ${kpi("Certificates earned", (s.certificates ? s.certificates.learners : 0), (s.certificates && s.certificates.byTrack && s.certificates.byTrack.length ? s.certificates.byTrack.map((t) => t.track + ": " + t.c).join(" · ") : "completed + passed the quiz"))}
-      ${kpi("Quiz pass rate", pct(s.quizzes.passRate), s.quizzes.attempts + " attempts")}
-      ${kpi("Avg learning gain", g.avgGainPoints == null ? "—" : "+" + g.avgGainPoints + " pts", g.bothTaken + " took both tests")}
+      ${kpi("Certificates earned", (s.certificates ? s.certificates.learners : 0), (s.certificates && s.certificates.byTrack && s.certificates.byTrack.length ? s.certificates.byTrack.map((t) => t.track + ": " + fmt(t.c)).join(" · ") : "completed + passed the quiz"))}
+      ${kpi("Quiz pass rate", pct(s.quizzes.passRate), fmt(s.quizzes.attempts) + " attempts")}
+      ${kpi("Avg learning gain", g.avgGainPoints == null ? "—" : "+" + g.avgGainPoints + " pts", fmt(g.bothTaken) + " took both tests")}
     </div>
 
     <section class="grid two">
       <div class="card">
         <h2>Engagement funnel</h2>
         ${s.funnel.map((f) => `
-          <div class="row"><div class="name">${esc(f.stage)}</div>${bar(f.count, funnelMax)}<div class="num">${f.count}</div></div>
+          <div class="row"><div class="name">${esc(f.stage)}</div>${bar(f.count, funnelMax)}<div class="num">${fmt(f.count)}</div></div>
         `).join("")}
       </div>
       <div class="card">
         <h2>Active learners · last 14 days</h2>
         <div class="spark">
-          ${s.retention.activityByDay.map((d) => `<div title="${d.d}: ${d.u} active, ${d.n} events"><span style="height:${Math.round((d.u / dayMax) * 100)}%"></span></div>`).join("")}
+          ${s.retention.activityByDay.map((d) => `<div title="${d.d}: ${fmt(d.u)} active, ${fmt(d.n)} events"><span style="height:${Math.round((d.u / dayMax) * 100)}%"></span></div>`).join("")}
         </div>
         <div class="spark-labels">
           ${s.retention.activityByDay.map((d, i) => `<div>${i % 2 === 0 ? d.d.slice(5) : ""}</div>`).join("")}
@@ -156,7 +158,7 @@ function render(data) {
         <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Every learner in exactly one bucket — the base for targeted reminders &amp; at-risk outreach.</div>
         ${(s.segments ? s.segments.meta : []).map((m) => {
           const c = (s.segments.counts && s.segments.counts[m.key]) || 0;
-          return `<div class="row"><div class="name" title="${esc(m.hint)}">${esc(m.label)}</div>${bar(c, s.reach.users || 1)}<div class="num">${c}</div></div>`;
+          return `<div class="row"><div class="name" title="${esc(m.hint)}">${esc(m.label)}</div>${bar(c, s.reach.users || 1)}<div class="num">${fmt(c)}</div></div>`;
         }).join("")}
       </div>
       <div class="card">
@@ -164,11 +166,11 @@ function render(data) {
         <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Likely to drop off before certifying — outreach targets.</div>
         ${s.atRisk ? [["High risk","high","#c0392b"],["Medium risk","medium","#d98c00"],["Low risk","low","#1f8f57"]].map(([label,key,col]) => {
           const c = s.atRisk.bands[key] || 0;
-          return `<div class="row"><div class="name"><span style="color:${col}">●</span> ${label}</div>${bar(c, s.reach.users || 1)}<div class="num">${c}</div></div>`;
+          return `<div class="row"><div class="name"><span style="color:${col}">●</span> ${label}</div>${bar(c, s.reach.users || 1)}<div class="num">${fmt(c)}</div></div>`;
         }).join("") : ""}
         <div class="row" style="border-top:1px solid #e4e8f1;margin-top:8px;padding-top:10px">
           <div class="name"><b>🎯 Worth saving</b> <span style="color:#5c6b86">— at-risk with real progress</span></div>
-          <div class="num"><b>${s.atRisk ? s.atRisk.savable : 0}</b></div>
+          <div class="num"><b>${fmt(s.atRisk ? s.atRisk.savable : 0)}</b></div>
         </div>
       </div>
     </section>
@@ -176,16 +178,16 @@ function render(data) {
     <section class="grid two">
       <div class="card">
         <h2>Skill levels</h2>
-        ${s.xp.byLevel.map((l) => `<div class="row"><div class="name">${esc(l.name)}</div>${bar(l.count, levelMax)}<div class="num">${l.count}</div></div>`).join("")}
+        ${s.xp.byLevel.map((l) => `<div class="row"><div class="name">${esc(l.name)}</div>${bar(l.count, levelMax)}<div class="num">${fmt(l.count)}</div></div>`).join("")}
       </div>
       <div class="card">
         <h2>Streaks &amp; reminders</h2>
         <div class="row"><div class="name">Avg streak</div><div class="num" style="width:auto">${s.streaks.avg} days</div></div>
         <div class="row"><div class="name">Longest streak</div><div class="num" style="width:auto">${s.streaks.max} days</div></div>
-        <div class="row"><div class="name">Opted into reminders</div><div class="num" style="width:auto">${s.reminders.optedIn}</div></div>
-        <div class="row"><div class="name">Nudges sent</div><div class="num" style="width:auto">${s.reminders.nudgesSent}</div></div>
-        <div class="row"><div class="name">Check accuracy</div><div class="num" style="width:auto">${pct(s.checks.accuracy)} <span class="muted">(${s.checks.answered})</span></div></div>
-        <div class="row"><div class="name">Language split</div><div class="num" style="width:auto">${Object.entries(langCount).map(([k, v]) => `${k.toUpperCase()} ${v}`).join(" · ") || "—"}</div></div>
+        <div class="row"><div class="name">Opted into reminders</div><div class="num" style="width:auto">${fmt(s.reminders.optedIn)}</div></div>
+        <div class="row"><div class="name">Nudges sent</div><div class="num" style="width:auto">${fmt(s.reminders.nudgesSent)}</div></div>
+        <div class="row"><div class="name">Check accuracy</div><div class="num" style="width:auto">${pct(s.checks.accuracy)} <span class="muted">(${fmt(s.checks.answered)})</span></div></div>
+        <div class="row"><div class="name">Language split</div><div class="num" style="width:auto">${Object.entries(langCount).map(([k, v]) => `${k.toUpperCase()} ${fmt(v)}`).join(" · ") || "—"}</div></div>
       </div>
     </section>
 
@@ -203,8 +205,8 @@ function render(data) {
               <td><span class="pill ${l.track}">${l.track}</span></td>
               <td class="muted">${esc(l.module)}</td>
               <td>${esc(l.title)}</td>
-              <td class="num"><span class="minibar">${bar(l.completed, Math.max(1, ...lessons.map((x) => x.completed)))}<b>${l.completed}</b></span></td>
-              <td class="num ${accClass(l.checkAccuracy)}">${l.checkAccuracy == null ? "—" : l.checkAccuracy + "%"}<span class="muted"> ${l.checkAnswered ? "(" + l.checkAnswered + ")" : ""}</span></td>
+              <td class="num"><span class="minibar">${bar(l.completed, Math.max(1, ...lessons.map((x) => x.completed)))}<b>${fmt(l.completed)}</b></span></td>
+              <td class="num ${accClass(l.checkAccuracy)}">${l.checkAccuracy == null ? "—" : l.checkAccuracy + "%"}<span class="muted"> ${l.checkAnswered ? "(" + fmt(l.checkAnswered) + ")" : ""}</span></td>
             </tr>`).join("")}
           </tbody>
         </table>
@@ -229,7 +231,7 @@ function render(data) {
               <td><span class="pill lang">${l.lang.toUpperCase()}</span></td>
               <td>${l.track ? `<span class="pill ${l.track}">${l.track}</span>` : '<span class="muted">—</span>'}</td>
               <td class="num"><span class="minibar">${bar(l.lessonsDone, l.lessonsTotal || 1)}<b>${l.lessonsDone}/${l.lessonsTotal || "—"}</b></span></td>
-              <td class="num">${l.xp}</td>
+              <td class="num">${fmt(l.xp)}</td>
               <td>${esc(l.level)}</td>
               <td class="num">${l.streak || "—"}</td>
               <td class="num">${l.quizAttempts ? l.quizPasses + "/" + l.quizAttempts : "—"}</td>

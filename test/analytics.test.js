@@ -71,6 +71,12 @@ test('analytics.summary reflects the funnel, gain, checks and reach', async () =
   // Activity has been logged (activeToday is keyed on the real event date, so
   // assert the date-independent "ever active" count instead).
   assert.ok(a.reach.distinctActive >= 2);
+
+  // Every learner lands in exactly one segment; the buckets sum to the user count.
+  const segKeys = a.segments.meta.map((m) => m.key);
+  assert.deepEqual(Object.keys(a.segments.counts).sort(), [...segKeys].sort());
+  const segSum = Object.values(a.segments.counts).reduce((n, c) => n + c, 0);
+  assert.equal(segSum, a.reach.users, 'segments partition all learners');
 });
 
 test('summary counts certificates earned (issued rows) and shows the funnel stage', async () => {

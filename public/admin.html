@@ -146,6 +146,17 @@ function render(data) {
       </div>
     </section>
 
+    <section>
+      <div class="card">
+        <h2>Learner segments</h2>
+        <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Every learner in exactly one bucket — the base for targeted reminders &amp; at-risk outreach.</div>
+        ${(s.segments ? s.segments.meta : []).map((m) => {
+          const c = (s.segments.counts && s.segments.counts[m.key]) || 0;
+          return `<div class="row"><div class="name" title="${esc(m.hint)}">${esc(m.label)}</div>${bar(c, s.reach.users || 1)}<div class="num">${c}</div></div>`;
+        }).join("")}
+      </div>
+    </section>
+
     <section class="grid two">
       <div class="card">
         <h2>Skill levels</h2>

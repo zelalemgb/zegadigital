@@ -42,6 +42,12 @@ const config = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  // Earliest hour of day (server clock — set TZ=Africa/Addis_Ababa so this is
+  // EAT) to send reminders. Default 20:00 = 8pm, the evening engagement peak
+  // (off work, post-dinner, on the phone). Tune/A-B test via NUDGE_HOUR.
+  nudgeHour: Number.isFinite(parseInt(process.env.NUDGE_HOUR, 10))
+    ? parseInt(process.env.NUDGE_HOUR, 10)
+    : 20,
 
   // Public base URL where lesson images are hosted (e.g. https://cdn.example.com).
   // Lesson `image` paths like "/img/passwords.png" are resolved against this when

@@ -17,6 +17,7 @@ const { getContent } = require('./content');
 const curriculum = require('./curriculum');
 const { levelInfo, LEVELS } = require('./gamification/xp');
 const segments = require('./learners/segments');
+const risk = require('./learners/risk');
 
 // Backend-agnostic read: SQLite exposes a sync `.prepare().all()`, Postgres an
 // async `pool.query()`. `await` handles both. The SQL below is standard/portable
@@ -63,7 +64,8 @@ async function summary(opts = {}) {
       passedMap.get(r.user_id).add(d.track);
     }
   }
-  const segmentKeys = profiles.map((p) => {
+  const nowD = { day: today };
+  const perLearner = profiles.map((p) => {
     const track = p.track || null;
     const done = completedByUser.get(p.user_id) || 0;
     const total = (track && trackTotals[track]) || 0;
@@ -72,9 +74,26 @@ async function summary(opts = {}) {
       quizPassed: track ? Boolean(passedMap.get(p.user_id) && passedMap.get(p.user_id).has(track)) : false,
       certIssued: track ? Boolean(certMap.get(p.user_id) && certMap.get(p.user_id).has(track)) : false,
     };
-    return segments.segmentOf({ track, lastActiveDay: p.last_active_day || null }, prog, cert, { day: today });
+    const profLite = {
+      track,
+      lastActiveDay: p.last_active_day || null,
+      streak: p.streak || 0,
+      nudgeIgnored: p.nudge_ignored || 0,
+    };
+    const score = risk.riskScore(profLite, prog, cert, nowD);
+    return {
+      segment: segments.segmentOf(profLite, prog, cert, nowD),
+      risk: score,
+      savable: risk.isSavable(score, prog),
+    };
   });
-  const segmentCounts = segments.tally(segmentKeys);
+  const segmentCounts = segments.tally(perLearner.map((x) => x.segment));
+  const riskBands = { high: 0, medium: 0, low: 0 };
+  let savable = 0;
+  for (const x of perLearner) {
+    riskBands[risk.riskBand(x.risk)] += 1;
+    if (x.savable) savable += 1;
+  }
 
   // ── XP / levels / streaks ───────────────────────────────────────────────
   const byLevel = LEVELS.map((l) => ({ name: l.name, count: 0 }));
@@ -146,6 +165,7 @@ async function summary(opts = {}) {
     learningGain: learning,
     certificates: { issued: certificatesIssued, learners: certifiedLearners, byTrack: certByTrack },
     segments: { counts: segmentCounts, meta: segments.SEGMENTS },
+    atRisk: { bands: riskBands, savable },
     badges: { awarded: badgesAwarded, byBadge: badgeRows },
     reminders: { optedIn, nudgesSent },
   };
@@ -216,12 +236,30 @@ async function learners() {
     if (a.kind === 'endline') e.endline = pct(a);
     asmtBy.set(a.user_id, e);
   }
+  // issued certificates per user (for segment/risk)
+  const certBy = new Map();
+  for (const r of await rows('SELECT user_id, track FROM certificates')) {
+    if (!certBy.has(r.user_id)) certBy.set(r.user_id, new Set());
+    certBy.get(r.user_id).add(r.track);
+  }
+  const nowD = { day: new Date().toISOString().slice(0, 10) };
 
   return (await rows('SELECT * FROM profiles')).map((p) => {
     const done = doneBy.get(p.user_id) || 0;
     const total = p.track ? trackTotals[p.track] || 0 : 0;
     const quiz = quizBy.get(p.user_id);
     const asmt = asmtBy.get(p.user_id) || {};
+    const prog = { done, total, remaining: total - done, complete: total > 0 && done >= total };
+    const cert = {
+      quizPassed: Boolean(quiz && quiz.passes > 0),
+      certIssued: Boolean(p.track && certBy.get(p.user_id) && certBy.get(p.user_id).has(p.track)),
+    };
+    const profLite = {
+      track: p.track || null,
+      lastActiveDay: p.last_active_day || null,
+      streak: p.streak || 0,
+      nudgeIgnored: p.nudge_ignored || 0,
+    };
     return {
       id: maskId(p.user_id),
       lang: p.lang || 'en',
@@ -238,6 +276,8 @@ async function learners() {
       quizAttempts: quiz ? quiz.attempts : 0,
       baselinePct: asmt.baseline != null ? Math.round(asmt.baseline) : null,
       endlinePct: asmt.endline != null ? Math.round(asmt.endline) : null,
+      segment: segments.segmentOf(profLite, prog, cert, nowD),
+      risk: risk.riskScore(profLite, prog, cert, nowD),
     };
   }).sort((a, b) => (b.lastActive || '').localeCompare(a.lastActive || ''));
 }

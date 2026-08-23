@@ -119,6 +119,16 @@ test('publicStats exposes only non-sensitive aggregates', async () => {
   assert.deepEqual(Object.keys(s).sort(), ['languages', 'learners', 'lessons', 'tracks']);
 });
 
+test('nudgeStatus reports today\'s sent/failed counts (no PII)', async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  await db.logEvent('nudge-user', 'nudgeSent', { type: 'almostThere' });
+  const s = await analytics.nudgeStatus(today);
+  assert.ok(s.sentToday >= 1, 'counts a nudge sent today');
+  assert.equal(typeof s.failedToday, 'number');
+  assert.ok(s.sentTotal >= s.sentToday);
+  assert.deepEqual(Object.keys(s).sort(), ['day', 'failedToday', 'lastError', 'sentToday', 'sentTotal']);
+});
+
 test('learners returns masked, per-user progress rows', async () => {
   const rows = await analytics.learners();
   assert.ok(rows.length >= 2);

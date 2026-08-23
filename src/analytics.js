@@ -16,6 +16,7 @@ const store = require('./store');
 const { getContent } = require('./content');
 const curriculum = require('./curriculum');
 const { levelInfo, LEVELS } = require('./gamification/xp');
+const segments = require('./learners/segments');
 
 // Backend-agnostic read: SQLite exposes a sync `.prepare().all()`, Postgres an
 // async `pool.query()`. `await` handles both. The SQL below is standard/portable
@@ -45,6 +46,35 @@ async function summary(opts = {}) {
   const completedTrack = profiles.filter(
     (p) => p.track && trackTotals[p.track] && (completedByUser.get(p.user_id) || 0) >= trackTotals[p.track]
   ).length;
+
+  // ── Learner segments (Recency / Frequency / Progress) ──────────────────────
+  // Two batch queries build per-user cert + passed-quiz maps; the segment for
+  // each learner then comes from counts already in hand (no per-user queries).
+  const certMap = new Map();
+  for (const r of await rows('SELECT user_id, track FROM certificates')) {
+    if (!certMap.has(r.user_id)) certMap.set(r.user_id, new Set());
+    certMap.get(r.user_id).add(r.track);
+  }
+  const passedMap = new Map();
+  for (const r of await rows("SELECT user_id, data FROM events WHERE type = 'quizFinished'")) {
+    const d = safe(r.data);
+    if (d && d.passed && d.track) {
+      if (!passedMap.has(r.user_id)) passedMap.set(r.user_id, new Set());
+      passedMap.get(r.user_id).add(d.track);
+    }
+  }
+  const segmentKeys = profiles.map((p) => {
+    const track = p.track || null;
+    const done = completedByUser.get(p.user_id) || 0;
+    const total = (track && trackTotals[track]) || 0;
+    const prog = { done, total, remaining: total - done, complete: total > 0 && done >= total };
+    const cert = {
+      quizPassed: track ? Boolean(passedMap.get(p.user_id) && passedMap.get(p.user_id).has(track)) : false,
+      certIssued: track ? Boolean(certMap.get(p.user_id) && certMap.get(p.user_id).has(track)) : false,
+    };
+    return segments.segmentOf({ track, lastActiveDay: p.last_active_day || null }, prog, cert, { day: today });
+  });
+  const segmentCounts = segments.tally(segmentKeys);
 
   // ── XP / levels / streaks ───────────────────────────────────────────────
   const byLevel = LEVELS.map((l) => ({ name: l.name, count: 0 }));
@@ -115,6 +145,7 @@ async function summary(opts = {}) {
     checks: { answered: checksAnswered, accuracy: checkAccuracy },
     learningGain: learning,
     certificates: { issued: certificatesIssued, learners: certifiedLearners, byTrack: certByTrack },
+    segments: { counts: segmentCounts, meta: segments.SEGMENTS },
     badges: { awarded: badgesAwarded, byBadge: badgeRows },
     reminders: { optedIn, nudgesSent },
   };

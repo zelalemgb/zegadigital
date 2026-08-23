@@ -35,13 +35,6 @@ const config = {
   // (logs what it would send) even when WhatsApp is configured — so we can ship
   // the logic, watch opt-ins grow, and flip sending on once Meta approves.
   nudgeTemplatesReady: process.env.NUDGE_TEMPLATES_READY === 'true',
-  // Which learner languages receive proactive reminders. Default English-only
-  // while am/om templates are still being registered/mapped; widen with
-  // NUDGE_LANGS=en,am,om (env only, no deploy) once those are approved.
-  nudgeLangs: (process.env.NUDGE_LANGS || 'en')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean),
   // Earliest hour of day (server clock — set TZ=Africa/Addis_Ababa so this is
   // EAT) to send reminders. Default 20:00 = 8pm, the evening engagement peak
   // (off work, post-dinner, on the phone). Tune/A-B test via NUDGE_HOUR.

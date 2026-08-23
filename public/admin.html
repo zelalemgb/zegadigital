@@ -50,8 +50,10 @@
   .bar { flex: 1; height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; }
   .bar > span { display: block; height: 100%; background: var(--brand); border-radius: 6px; }
   .spark { display: flex; align-items: flex-end; gap: 3px; height: 90px; }
-  .spark > div { flex: 1; background: var(--brand-soft); border-radius: 3px 3px 0 0; position: relative; min-height: 2px; }
-  .spark > div > span { background: var(--brand); display: block; width: 100%; height: 100%; border-radius: 3px 3px 0 0; }
+  /* Each column fills the 90px track so the inner bar's % height has a definite
+     parent to resolve against; the bar sits at the bottom and grows upward. */
+  .spark > div { flex: 1; height: 100%; display: flex; align-items: flex-end; background: var(--brand-soft); border-radius: 3px 3px 0 0; }
+  .spark > div > span { display: block; width: 100%; min-height: 2px; background: var(--brand); border-radius: 3px 3px 0 0; }
   .spark-labels { display: flex; gap: 3px; margin-top: 6px; }
   .spark-labels > div { flex: 1; text-align: center; font-size: 10px; color: var(--muted); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }

@@ -77,6 +77,11 @@ test('analytics.summary reflects the funnel, gain, checks and reach', async () =
   assert.deepEqual(Object.keys(a.segments.counts).sort(), [...segKeys].sort());
   const segSum = Object.values(a.segments.counts).reduce((n, c) => n + c, 0);
   assert.equal(segSum, a.reach.users, 'segments partition all learners');
+
+  // At-risk bands partition all learners too; savable is a subset.
+  const riskSum = a.atRisk.bands.high + a.atRisk.bands.medium + a.atRisk.bands.low;
+  assert.equal(riskSum, a.reach.users, 'risk bands partition all learners');
+  assert.ok(a.atRisk.savable <= a.reach.users);
 });
 
 test('summary counts certificates earned (issued rows) and shows the funnel stage', async () => {

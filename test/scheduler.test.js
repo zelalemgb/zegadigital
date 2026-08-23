@@ -5,6 +5,7 @@ process.env.ZEGA_DB = ':memory:';
 const { test } = require('node:test');
 const assert = require('node:assert');
 const nudges = require('../src/scheduler/nudges');
+const config = require('../src/config');
 const runtime = require('../src/runtime');
 const db = require('../src/store/db');
 const curriculum = require('../src/curriculum');
@@ -116,6 +117,22 @@ test('reminders are restricted to English while am/om templates are pending', as
   const sent = [];
   await runtime.runNudgeSweep({ hour: 20, day: '2026-07-11' }, async (u, n) => sent.push({ u, t: n.type }));
   assert.ok(!sent.some((s) => s.u === uid), 'Amharic learner is skipped (English-only for now)');
+});
+
+test('the daily send window holds reminders until config.nudgeHour', async () => {
+  const uid = 'sweep-window';
+  await runtime.processMessage(uid, 'Hi', { today: '2026-07-20' });
+  await runtime.processMessage(uid, '1', { today: '2026-07-20' }); // English
+  await runtime.processMessage(uid, '1', { today: '2026-07-20' }); // Youth
+  await runtime.processMessage(uid, 'REMIND ON', { today: '2026-07-20' });
+  for (const id of youthIds.slice(0, youthIds.length - 2)) db.markLessonComplete(uid, id); // almost there
+
+  const send = async () => {};
+  const day = '2026-09-01';
+  const before = await runtime.runNudgeSweep({ hour: config.nudgeHour - 1, day }, send);
+  assert.equal(before.length, 0, 'the whole sweep is held before the send hour');
+  const at = await runtime.runNudgeSweep({ hour: config.nudgeHour, day }, send);
+  assert.ok(at.some((x) => x.userId === uid), 'the learner is sent once the send hour arrives');
 });
 
 test('an on-track, recently-active learner is NOT nudged (no spam)', async () => {

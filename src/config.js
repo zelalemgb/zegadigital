@@ -35,6 +35,13 @@ const config = {
   // (logs what it would send) even when WhatsApp is configured — so we can ship
   // the logic, watch opt-ins grow, and flip sending on once Meta approves.
   nudgeTemplatesReady: process.env.NUDGE_TEMPLATES_READY === 'true',
+  // Which learner languages receive proactive reminders. Default English-only
+  // while am/om templates are still being registered/mapped; widen with
+  // NUDGE_LANGS=en,am,om (env only, no deploy) once those are approved.
+  nudgeLangs: (process.env.NUDGE_LANGS || 'en')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
 
   // Public base URL where lesson images are hosted (e.g. https://cdn.example.com).
   // Lesson `image` paths like "/img/passwords.png" are resolved against this when

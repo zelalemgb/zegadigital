@@ -105,6 +105,19 @@ test('runNudgeSweep sends an "almost there" nudge once, then not again the same 
   assert.equal(sent.length, 1);
 });
 
+test('reminders are restricted to English while am/om templates are pending', async () => {
+  const uid = 'sweep-amharic';
+  await runtime.processMessage(uid, 'Hi', { today: '2026-07-10' });
+  await runtime.processMessage(uid, '2', { today: '2026-07-10' }); // Amharic
+  await runtime.processMessage(uid, '1', { today: '2026-07-10' }); // Youth
+  await runtime.processMessage(uid, 'REMIND ON', { today: '2026-07-10' });
+  for (const id of youthIds.slice(0, youthIds.length - 2)) db.markLessonComplete(uid, id); // almost there
+
+  const sent = [];
+  await runtime.runNudgeSweep({ hour: 20, day: '2026-07-11' }, async (u, n) => sent.push({ u, t: n.type }));
+  assert.ok(!sent.some((s) => s.u === uid), 'Amharic learner is skipped (English-only for now)');
+});
+
 test('an on-track, recently-active learner is NOT nudged (no spam)', async () => {
   const uid = 'sweep-ontrack';
   await runtime.processMessage(uid, 'Hi', { today: '2026-07-05' });

@@ -106,7 +106,7 @@ test('runNudgeSweep sends an "almost there" nudge once, then not again the same 
   assert.equal(sent.length, 1);
 });
 
-test('reminders are restricted to English while am/om templates are pending', async () => {
+test('every learner, including an Amharic one, gets the English reminder', async () => {
   const uid = 'sweep-amharic';
   await runtime.processMessage(uid, 'Hi', { today: '2026-07-10' });
   await runtime.processMessage(uid, '2', { today: '2026-07-10' }); // Amharic
@@ -115,8 +115,10 @@ test('reminders are restricted to English while am/om templates are pending', as
   for (const id of youthIds.slice(0, youthIds.length - 2)) db.markLessonComplete(uid, id); // almost there
 
   const sent = [];
-  await runtime.runNudgeSweep({ hour: 20, day: '2026-07-11' }, async (u, n) => sent.push({ u, t: n.type }));
-  assert.ok(!sent.some((s) => s.u === uid), 'Amharic learner is skipped (English-only for now)');
+  await runtime.runNudgeSweep({ hour: config.nudgeHour, day: '2026-07-11' }, async (u, n) => sent.push({ u, n }));
+  const mine = sent.find((s) => s.u === uid);
+  assert.ok(mine, 'Amharic learner is nudged too');
+  assert.match(mine.n.message, /almost there|lessons left/i, 'the reminder content is English');
 });
 
 test('the daily send window holds reminders until config.nudgeHour', async () => {

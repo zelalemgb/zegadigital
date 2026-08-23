@@ -13,16 +13,11 @@ const config = require('../config');
 const runtime = require('../runtime');
 const wa = require('../whatsapp/cloudApi');
 
-// Candidate WhatsApp template locales per learner language, tried in order until
-// one matches an approved template. WhatsApp has no Amharic/Afaan Oromo template
-// locales, so their text is registered under English locales; the sender falls
-// back across the English variants so it works however English was registered
-// (en_US / en / en_GB). Language reach is gated by config.nudgeLangs.
-const LANG_LOCALES = {
-  en: ['en_US', 'en', 'en_GB'],
-  am: ['en_GB', 'en_US', 'en'],
-  om: ['en', 'en_US', 'en_GB'],
-};
+// Only the English templates are approved, so every learner gets the English
+// reminder. Try the English locale variants in order until one matches the
+// approved template, so it works however English was registered (en_US / en /
+// en_GB). Switch to a per-language map once am/om templates are approved.
+const ENGLISH_LOCALES = ['en_US', 'en', 'en_GB'];
 // "Template does not exist in this language" — fall through to the next locale.
 const LOCALE_MISS = /132001|does not exist|not found|no matching|translation/i;
 
@@ -40,7 +35,7 @@ async function sender(userId, nudge, profile) {
     console.log(`   [DRY-RUN: ${why}] → ${userId} (${nudge.type}): ${nudge.message.replace(/\n/g, ' ')}`);
     return false; // signal "not delivered" so the sweep leaves state untouched
   }
-  const locales = LANG_LOCALES[profile.lang] || LANG_LOCALES.en;
+  const locales = ENGLISH_LOCALES;
   let lastErr;
   for (const loc of locales) {
     try {

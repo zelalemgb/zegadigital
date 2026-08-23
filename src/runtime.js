@@ -341,7 +341,12 @@ async function startConversationInner(userId, opts = {}) {
 
 /** Gather everything the nudge logic needs to decide a learner's stage. */
 async function nudgeContextFor(profile) {
-  const content = getContent(profile.lang);
+  // Only the English templates are approved, so EVERY learner gets the English
+  // reminder — built from English content too (English lesson titles), so it's
+  // not a mixed-language message. Tapping "Continue" resumes the lesson in the
+  // learner's own language. Switch to getContent(profile.lang) once per-language
+  // templates are approved.
+  const content = getContent('en');
   const completed = await db.getCompletedLessons(profile.userId);
   const cert = {
     quizPassed: (await db.getPassedQuizTracks(profile.userId)).has(profile.track),
@@ -372,10 +377,9 @@ async function runNudgeSweep(now, send) {
   // TZ=Africa/Addis_Ababa makes it EAT). Keeps reminders in the evening
   // engagement peak instead of whenever a sweep happens to run.
   if (now.hour < config.nudgeHour) return [];
-  // Only nudge learners in a language we currently have approved templates for
-  // (config.nudgeLangs — English-only by default; widen via NUDGE_LANGS).
-  const candidates = (await db.profilesDueForNudge(now.day, now.hour))
-    .filter((p) => config.nudgeLangs.includes(p.lang));
+  // Every opted-in learner is nudged, regardless of language — they all receive
+  // the English reminder (see nudgeContextFor).
+  const candidates = await db.profilesDueForNudge(now.day, now.hour);
   const sent = [];
   await mapWithConcurrency(candidates, config.nudgeConcurrency, async (profile) => {
     if (!nudges.backoffAllows(profile, now)) return; // paused / weekly band

@@ -166,6 +166,34 @@ test("Continue after a module's last lesson goes to the NEXT module's menu", () 
   assert.equal(r.session.cursor.id, 'youth.wellness'); // next module, not the finished one
 });
 
+test('finishing the last lesson with an earlier gap leads to the missing lesson, not the quiz', () => {
+  const content = getContent('en');
+  const curriculum = require('../src/curriculum');
+  const ids = curriculum.allLessonIds(content, 'youth');
+  const last = ids[ids.length - 1];
+  const gap = ids[5]; // one lesson skipped (e.g. done out of order via topic browsing)
+  const completed = new Set(ids.filter((id) => id !== gap));
+  const session = Object.assign(freshSession(), {
+    started: true, awaitingLanguage: false, lang: 'en', track: 'youth',
+    cursor: { type: 'completion', lessonId: last },
+  });
+  const r = handle(session, '1', { completed, baselineDone: true, endlineDone: true });
+  assert.equal(r.session.cursor.type, 'lesson');
+  assert.equal(r.session.cursor.id, gap); // routed to the gap, not YOUTH_QUIZ
+});
+
+test('finishing the last lesson with everything done still goes to the quiz', () => {
+  const content = getContent('en');
+  const curriculum = require('../src/curriculum');
+  const ids = curriculum.allLessonIds(content, 'youth');
+  const session = Object.assign(freshSession(), {
+    started: true, awaitingLanguage: false, lang: 'en', track: 'youth',
+    cursor: { type: 'completion', lessonId: ids[ids.length - 1] },
+  });
+  const r = handle(session, '1', { completed: new Set(ids), baselineDone: true, endlineDone: true });
+  assert.equal(r.session.cursor.type, 'quiz');
+});
+
 test('every menu option points to a resolvable target', () => {
   const content = getContent('en');
   const specials = new Set(['HOME', 'MAIN', 'LANGUAGE', 'GLOSSARY', 'PROGRESS', 'EXIT', 'YOUTH_QUIZ', 'ADULT_QUIZ']);

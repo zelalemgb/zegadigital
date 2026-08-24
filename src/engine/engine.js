@@ -449,7 +449,7 @@ function showCompletion(session, content, lessonId, prefix = []) {
 function handleCompletion(session, content, cur, text, cmd) {
   const node = content.nodes[cur.lessonId];
   if (text === '1' || cmd === 'NEXT') {
-    const dest = nextAfterLesson(content, session.track, cur.lessonId);
+    const dest = nextAfterLesson(content, session.track, cur.lessonId, CTX.completed);
     if (dest.kind === 'lesson' || dest.kind === 'menu') return goTo(session, content, dest.id);
     if (dest.kind === 'quiz') {
       return goTo(session, content, session.track === 'youth' ? 'YOUTH_QUIZ' : 'ADULT_QUIZ');
@@ -464,7 +464,7 @@ function handleCompletion(session, content, cur, text, cmd) {
 // Where "Continue" goes after finishing a lesson: the next lesson in the same
 // module; or, if that was the module's last lesson, the NEXT module's menu (to
 // pick a new topic); or, after the final module, the track quiz.
-function nextAfterLesson(content, track, lessonId) {
+function nextAfterLesson(content, track, lessonId, completedSet) {
   const modules = curriculum.modulesForTrack(content, track);
   const mi = modules.findIndex((m) => m.lessonIds.includes(lessonId));
   if (mi === -1) return { kind: 'home' };
@@ -472,6 +472,15 @@ function nextAfterLesson(content, track, lessonId) {
   const li = mod.lessonIds.indexOf(lessonId);
   if (li < mod.lessonIds.length - 1) return { kind: 'lesson', id: mod.lessonIds[li + 1] };
   if (mi < modules.length - 1) return { kind: 'menu', id: modules[mi + 1].id };
+  // End of the final module: don't push to the quiz while any lesson is still
+  // incomplete. Lessons can be done out of order (browsing topics), so lead the
+  // learner to the remaining gap instead of stranding them at the quiz.
+  if (completedSet) {
+    const done = new Set(completedSet);
+    done.add(lessonId); // the lesson just finished counts as done for gap detection
+    const gap = curriculum.nextLesson(content, track, done);
+    if (gap) return { kind: 'lesson', id: gap.lessonId };
+  }
   return { kind: 'quiz' };
 }
 

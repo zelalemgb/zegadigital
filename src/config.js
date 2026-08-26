@@ -42,6 +42,32 @@ const config = {
     ? parseInt(process.env.NUDGE_HOUR, 10)
     : 20,
 
+  // Personalized send-time: when true, each learner's reminder hour is derived
+  // from the hour of day they're actually active (learned from their event
+  // history), instead of everyone sharing nudgeHour. Off by default — flipping
+  // it on is the only behaviour change; with it off the flow is exactly as
+  // before (everyone gated at nudgeHour). A learner who set an explicit hour via
+  // "REMIND 19" keeps it (that's a manual override; auto never touches it).
+  personalizedSendHour: process.env.PERSONALIZED_SEND_HOUR === 'true',
+  // Safe daytime window (server clock / EAT) for derived hours: never send
+  // before the earliest or after the latest, whatever the activity data says.
+  // Also the sweep floor when personalization is on.
+  nudgeEarliestHour: Number.isFinite(parseInt(process.env.NUDGE_EARLIEST_HOUR, 10))
+    ? parseInt(process.env.NUDGE_EARLIEST_HOUR, 10)
+    : 8,
+  nudgeLatestHour: Number.isFinite(parseInt(process.env.NUDGE_LATEST_HOUR, 10))
+    ? parseInt(process.env.NUDGE_LATEST_HOUR, 10)
+    : 21,
+  // How far back to look, and the minimum number of activity events needed,
+  // before trusting a derived hour (else fall back to nudgeHour).
+  sendHourLookbackDays: parseInt(process.env.SEND_HOUR_LOOKBACK_DAYS, 10) || 21,
+  sendHourMinEvents: parseInt(process.env.SEND_HOUR_MIN_EVENTS, 10) || 5,
+  // Hours to add to UTC-stored event timestamps to get the learner's local
+  // (EAT) hour. Events are logged in UTC; the scheduler thinks in EAT.
+  tzOffsetHours: Number.isFinite(parseInt(process.env.TZ_OFFSET_HOURS, 10))
+    ? parseInt(process.env.TZ_OFFSET_HOURS, 10)
+    : 3,
+
   // Public base URL where lesson images are hosted (e.g. https://cdn.example.com).
   // Lesson `image` paths like "/img/passwords.png" are resolved against this when
   // sending on real WhatsApp. Leave empty to send text only (e.g. for SVG assets,

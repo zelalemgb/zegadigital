@@ -140,7 +140,12 @@ async function processMessageInner(userId, input, opts = {}) {
         break;
       case 'setReminders':
         profile.optInReminders = ev.on;
-        if (ev.hour != null) profile.reminderHour = ev.hour;
+        if (ev.hour != null) {
+          // An explicit "REMIND 19" is a manual override — pin it and stop the
+          // personalized-send-time refresh from ever moving it.
+          profile.reminderHour = ev.hour;
+          profile.reminderHourAuto = false;
+        }
         profile.remindersPrompted = true;
         await db.logEvent(userId, 'setReminders', { on: ev.on, hour: profile.reminderHour });
         break;
@@ -363,6 +368,45 @@ async function buildNudgeForUser(userId, now = { hour: 23, day: todayStr() }) {
   return nudges.buildNudge(profile, content, completed, cert, now);
 }
 
+// The day (EAT) we last refreshed auto-derived send-hours, so the potentially
+// expensive per-learner pass runs at most once per calendar day. Module state:
+// resets on restart, which just lets the refresh run again — harmless.
+let lastAutoHourRefreshDay = null;
+
+/**
+ * Re-derive the reminder hour for every learner whose hour is still auto (never
+ * hand-set), from when they've actually been active. Bounded-concurrency, and a
+ * failure on one learner never blocks the others or the sweep. Returns the count
+ * of hours that changed. No-op unless config.personalizedSendHour is on.
+ */
+async function refreshAutoSendHours(now) {
+  if (!config.personalizedSendHour) return 0;
+  const profiles = await db.autoReminderProfiles();
+  let updated = 0;
+  await mapWithConcurrency(profiles, config.nudgeConcurrency, async (p) => {
+    try {
+      const counts = await db.activeHourCounts(p.userId, {
+        lookbackDays: config.sendHourLookbackDays,
+        tzOffsetHours: config.tzOffsetHours,
+      });
+      const hour = nudges.preferredSendHour(counts, {
+        earliest: config.nudgeEarliestHour,
+        latest: config.nudgeLatestHour,
+        minEvents: config.sendHourMinEvents,
+        fallback: config.nudgeHour,
+      });
+      if (hour !== p.reminderHour) {
+        await db.setAutoReminderHour(p.userId, hour);
+        updated += 1;
+      }
+    } catch (err) {
+      await db.logEvent(p.userId, 'sendHourRefreshFailed', { error: String(err && err.message) });
+    }
+  });
+  if (updated) console.log(`🕑 ${now.day} — refreshed send-hour for ${updated} learner(s).`);
+  return updated;
+}
+
 /**
  * Run one proactive sweep. Pulls only the *candidate* set from the DB (opted-in,
  * idle today, past their hour, not yet nudged today) rather than the whole table,
@@ -373,10 +417,24 @@ async function buildNudgeForUser(userId, now = { hour: 23, day: todayStr() }) {
  *   now = { hour, day }   send = async (userId, nudge, profile) => {}
  */
 async function runNudgeSweep(now, send) {
-  // Hold all sends until the daily send window (config.nudgeHour, server clock —
-  // TZ=Africa/Addis_Ababa makes it EAT). Keeps reminders in the evening
-  // engagement peak instead of whenever a sweep happens to run.
-  if (now.hour < config.nudgeHour) return [];
+  // Hold all sends until the daily send window (server clock — TZ=Africa/Addis_Ababa
+  // makes it EAT). With personalization off, that's the single shared config.nudgeHour
+  // (the evening engagement peak). With it on, each learner has their own hour, so
+  // the sweep only needs to hold until the earliest allowed hour; the per-learner
+  // `reminder_hour <= now.hour` gate in the DB query does the rest.
+  const sweepFloor = config.personalizedSendHour ? config.nudgeEarliestHour : config.nudgeHour;
+  if (now.hour < sweepFloor) return [];
+  // Once a day, before selecting candidates, refresh the auto-derived hours from
+  // recent activity. Cheap to skip (guarded by the flag + a per-day marker) and
+  // safe to re-run after a restart — setAutoReminderHour is idempotent.
+  if (config.personalizedSendHour && lastAutoHourRefreshDay !== now.day) {
+    lastAutoHourRefreshDay = now.day;
+    try {
+      await refreshAutoSendHours(now);
+    } catch (err) {
+      console.error('Auto send-hour refresh failed:', err);
+    }
+  }
   // Every opted-in learner is nudged, regardless of language — they all receive
   // the English reminder (see nudgeContextFor).
   const candidates = await db.profilesDueForNudge(now.day, now.hour);
@@ -443,5 +501,6 @@ module.exports = {
   startConversation,
   buildNudgeForUser,
   runNudgeSweep,
+  refreshAutoSendHours,
   todayStr,
 };

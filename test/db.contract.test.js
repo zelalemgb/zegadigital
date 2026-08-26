@@ -124,6 +124,62 @@ for (const backend of backends) {
       assert.ok(!ids2.has(due), 'not re-selected after being nudged today');
     });
 
+    it('reminder_hour_auto round-trips and defaults to auto', async () => {
+      const id = uid('auto');
+      const p = await repo.getOrCreateProfile(id, 'en');
+      assert.equal(p.reminderHourAuto, true, 'new learners are auto-derived by default');
+
+      p.reminderHourAuto = false; // a manual "REMIND 19"
+      await repo.saveProfile(p);
+      assert.equal((await repo.getOrCreateProfile(id, 'en')).reminderHourAuto, false);
+    });
+
+    it('autoReminderProfiles + setAutoReminderHour only touch still-auto opt-ins', async () => {
+      const day = '2026-08-21';
+      // Auto + opted-in + has a track → a refresh candidate.
+      const auto = uid('rh-auto');
+      const pa = await repo.getOrCreateProfile(auto, 'en');
+      Object.assign(pa, { track: 'youth', optInReminders: true, reminderHour: 19, lastActiveDay: day });
+      await repo.saveProfile(pa);
+      // Manual setter (auto = false) → excluded, and setAutoReminderHour must skip it.
+      const manual = uid('rh-manual');
+      const pm = await repo.getOrCreateProfile(manual, 'en');
+      Object.assign(pm, { track: 'youth', optInReminders: true, reminderHour: 19, reminderHourAuto: false });
+      await repo.saveProfile(pm);
+      // Not opted in → excluded.
+      const off = uid('rh-off');
+      const po = await repo.getOrCreateProfile(off, 'en');
+      Object.assign(po, { track: 'youth', optInReminders: false });
+      await repo.saveProfile(po);
+
+      const ids = new Set((await repo.autoReminderProfiles()).map((p) => p.userId));
+      assert.ok(ids.has(auto), 'auto opt-in is a refresh candidate');
+      assert.ok(!ids.has(manual), 'manual setter is excluded');
+      assert.ok(!ids.has(off), 'opted-out learner is excluded');
+
+      // The auto learner's hour moves; the manual learner's is guarded.
+      await repo.setAutoReminderHour(auto, 9);
+      await repo.setAutoReminderHour(manual, 9);
+      assert.equal((await repo.getOrCreateProfile(auto, 'en')).reminderHour, 9, 'auto hour updated');
+      assert.equal((await repo.getOrCreateProfile(manual, 'en')).reminderHour, 19, 'manual hour untouched');
+    });
+
+    it('activeHourCounts sums only genuine learner-activity events', async () => {
+      const id = uid('hist');
+      await repo.getOrCreateProfile(id, 'en');
+      await repo.logEvent(id, 'lessonCompleted', { lessonId: 'youth.ai.understanding' });
+      await repo.logEvent(id, 'quizFinished', { track: 'youth', passed: true });
+      await repo.logEvent(id, 'checkAnswered', { correct: true });
+      // System/outbound events must NOT count (else the histogram feeds back on itself).
+      await repo.logEvent(id, 'nudgeSent', { type: 'almostThere' });
+      await repo.logEvent(id, 'certificatePrompted', { track: 'youth' });
+
+      const counts = await repo.activeHourCounts(id, { lookbackDays: 21, tzOffsetHours: 3 });
+      assert.equal(counts.length, 24);
+      const total = counts.reduce((n, c) => n + c, 0);
+      assert.equal(total, 3, 'only the three activity events are counted');
+    });
+
     it('lesson progress is an idempotent set', async () => {
       const id = uid('prog');
       await repo.getOrCreateProfile(id, 'en');

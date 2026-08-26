@@ -117,11 +117,47 @@ function buildNudge(profile, content, completedSet, cert, now) {
   return { type: stage, message, button, template };
 }
 
+/**
+ * Derive a learner's best reminder hour from when they're actually active.
+ *
+ * `hourCounts` is a 24-slot array of how many events landed in each hour of the
+ * day, already in the learner's local (EAT) time. We pick the busiest hour
+ * inside the safe daytime window [earliest, latest]; ties break toward the
+ * `fallback` hour (the proven evening slot). If there isn't enough signal — too
+ * few events overall, or none inside the window — we return `fallback` so the
+ * learner simply keeps the default hour. Pure; no I/O.
+ */
+function preferredSendHour(hourCounts, opts = {}) {
+  const earliest = opts.earliest == null ? 8 : opts.earliest;
+  const latest = opts.latest == null ? 21 : opts.latest;
+  const minEvents = opts.minEvents == null ? 5 : opts.minEvents;
+  const fallback = opts.fallback == null ? 19 : opts.fallback;
+
+  const counts = Array.isArray(hourCounts) ? hourCounts : [];
+  const total = counts.reduce((n, c) => n + (c || 0), 0);
+  if (total < minEvents) return fallback;
+
+  let bestHour = null;
+  let bestCount = 0;
+  for (let h = earliest; h <= latest; h++) {
+    const c = counts[h] || 0;
+    if (c === 0) continue;
+    const better = c > bestCount;
+    // On a tie, prefer the hour nearer the fallback (keeps sends in the slot we
+    // already know performs, rather than drifting to a random equal-count hour).
+    const closerOnTie = c === bestCount && bestHour != null &&
+      Math.abs(h - fallback) < Math.abs(bestHour - fallback);
+    if (better || closerOnTie) { bestHour = h; bestCount = c; }
+  }
+  return bestHour == null ? fallback : bestHour;
+}
+
 module.exports = {
   gateAllows,
   backoffAllows,
   stageFor,
   buildNudge,
+  preferredSendHour,
   // constants exported for tests / tuning visibility
   REENGAGE_GAP,
   ALMOST_LEFT,

@@ -15,6 +15,7 @@
  */
 
 const { Pool, types } = require('pg');
+const { ACTIVITY_EVENTS_SQL, bucketByEatHour } = require('./activityEvents');
 
 // Postgres returns COUNT()/SUM() (int8) and AVG() (numeric) as STRINGS by
 // default; parse them to JS numbers so analytics arithmetic matches SQLite.
@@ -51,6 +52,7 @@ async function init() {
       last_active_day  TEXT,
       opt_in_reminders BOOLEAN DEFAULT FALSE,
       reminder_hour    INTEGER DEFAULT 19,
+      reminder_hour_auto BOOLEAN DEFAULT TRUE,
       last_nudge_day   TEXT,
       reminders_prompted BOOLEAN DEFAULT FALSE,
       name             TEXT,
@@ -87,6 +89,8 @@ async function init() {
     );
     -- Lightweight migration for DBs created before the backoff counter existed.
     ALTER TABLE profiles ADD COLUMN IF NOT EXISTS nudge_ignored INTEGER DEFAULT 0;
+    -- Personalized send-time: 1/true = reminder_hour is auto-derived from activity.
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS reminder_hour_auto BOOLEAN DEFAULT TRUE;
     -- Indexes that matter at scale (the scheduler's "due" query, event lookups).
     CREATE INDEX IF NOT EXISTS idx_events_user_type ON events (user_id, type);
     CREATE INDEX IF NOT EXISTS idx_profiles_due ON profiles (opt_in_reminders, last_active_day, reminder_hour);
@@ -118,6 +122,8 @@ function rowToProfile(row) {
     lastActiveDay: row.last_active_day || null,
     optInReminders: Boolean(row.opt_in_reminders),
     reminderHour: row.reminder_hour == null ? 19 : row.reminder_hour,
+    // Older rows (pre-migration) have NULL here → treat as auto-derived.
+    reminderHourAuto: row.reminder_hour_auto == null ? true : Boolean(row.reminder_hour_auto),
     lastNudgeDay: row.last_nudge_day || null,
     remindersPrompted: Boolean(row.reminders_prompted),
     name: row.name || null,
@@ -143,13 +149,14 @@ async function saveProfile(p) {
     `UPDATE profiles SET
        lang = $1, track = $2, xp = $3, level_index = $4, streak = $5,
        longest_streak = $6, last_active_day = $7, opt_in_reminders = $8,
-       reminder_hour = $9, last_nudge_day = $10, reminders_prompted = $11,
-       lite = $12, resume = $13, nudge_ignored = $14, session = $15, updated_at = now()
-     WHERE user_id = $16`,
+       reminder_hour = $9, reminder_hour_auto = $10, last_nudge_day = $11, reminders_prompted = $12,
+       lite = $13, resume = $14, nudge_ignored = $15, session = $16, updated_at = now()
+     WHERE user_id = $17`,
     [
       p.lang, p.track, p.xp, p.levelIndex, p.streak,
       p.longestStreak, p.lastActiveDay, Boolean(p.optInReminders),
-      p.reminderHour, p.lastNudgeDay, Boolean(p.remindersPrompted),
+      // Default a missing flag to auto (true); only explicit false flips to manual.
+      p.reminderHour, p.reminderHourAuto !== false, p.lastNudgeDay, Boolean(p.remindersPrompted),
       Boolean(p.lite), p.resume ? JSON.stringify(p.resume) : null,
       p.nudgeIgnored || 0, p.session ? JSON.stringify(p.session) : null, p.userId,
     ]
@@ -179,6 +186,33 @@ async function profilesDueForNudge(day, hour) {
     [day, hour]
   );
   return rows.map(rowToProfile);
+}
+
+// ── Personalized send-time ───────────────────────────────────────────────────
+async function autoReminderProfiles() {
+  const { rows } = await q(
+    'SELECT * FROM profiles WHERE opt_in_reminders = TRUE AND reminder_hour_auto = TRUE AND track IS NOT NULL'
+  );
+  return rows.map(rowToProfile);
+}
+
+async function setAutoReminderHour(userId, hour) {
+  // The auto guard makes this a no-op for anyone who has hand-set their hour.
+  await q(
+    'UPDATE profiles SET reminder_hour = $1, updated_at = now() WHERE user_id = $2 AND reminder_hour_auto = TRUE',
+    [hour, userId]
+  );
+}
+
+async function activeHourCounts(userId, opts = {}) {
+  const lookbackDays = opts.lookbackDays || 21;
+  const tzOffsetHours = opts.tzOffsetHours || 0;
+  const { rows } = await q(
+    `SELECT ts FROM events
+     WHERE user_id = $1 AND ts >= now() - ($2 * INTERVAL '1 day') AND type IN (${ACTIVITY_EVENTS_SQL})`,
+    [userId, lookbackDays]
+  );
+  return bucketByEatHour(rows, tzOffsetHours);
 }
 
 async function setName(userId, name) {
@@ -312,6 +346,9 @@ module.exports = {
   setLastNudge,
   recordNudgeSent,
   profilesDueForNudge,
+  autoReminderProfiles,
+  setAutoReminderHour,
+  activeHourCounts,
   getCompletedLessons,
   markLessonComplete,
   getEarnedBadges,

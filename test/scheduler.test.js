@@ -81,6 +81,36 @@ test('buildNudge: cert-ready points at the CERTIFICATE action', () => {
   assert.equal(n.button.value, 'CERTIFICATE');
 });
 
+// ── preferredSendHour (pure) ─────────────────────────────────────────────────
+test('preferredSendHour picks the busiest hour inside the safe window', () => {
+  const counts = new Array(24).fill(0);
+  counts[9] = 4; // 9am peak
+  counts[14] = 7; // 2pm is busiest
+  counts[23] = 20; // late night — outside the window, must be ignored
+  const opts = { earliest: 8, latest: 21, minEvents: 5, fallback: 20 };
+  assert.equal(nudges.preferredSendHour(counts, opts), 14);
+});
+
+test('preferredSendHour falls back on too little signal or an out-of-window peak', () => {
+  const opts = { earliest: 8, latest: 21, minEvents: 5, fallback: 20 };
+  // Below the minimum-events threshold → fallback.
+  const thin = new Array(24).fill(0);
+  thin[10] = 3;
+  assert.equal(nudges.preferredSendHour(thin, opts), 20);
+  // Enough events, but all outside [8,21] → fallback.
+  const nocturnal = new Array(24).fill(0);
+  nocturnal[2] = 6;
+  assert.equal(nudges.preferredSendHour(nocturnal, opts), 20);
+});
+
+test('preferredSendHour breaks ties toward the fallback hour', () => {
+  const counts = new Array(24).fill(0);
+  counts[10] = 3;
+  counts[18] = 3; // same count, but nearer the 20:00 fallback
+  const opts = { earliest: 8, latest: 21, minEvents: 5, fallback: 20 };
+  assert.equal(nudges.preferredSendHour(counts, opts), 18);
+});
+
 // ── runNudgeSweep (integration through the real runtime + DB) ─────────────────
 test('runNudgeSweep sends an "almost there" nudge once, then not again the same day', async () => {
   const uid = 'sweep-almost';
@@ -150,4 +180,56 @@ test('an on-track, recently-active learner is NOT nudged (no spam)', async () =>
   const sent = [];
   await runtime.runNudgeSweep({ hour: 20, day: '2026-07-06' }, async (u, n) => sent.push({ u, t: n.type }));
   assert.ok(!sent.some((s) => s.u === uid), 'mid-progress active learner is left alone');
+});
+
+// ── personalized send-time (refresh + sweep floor) ───────────────────────────
+// These flip config.personalizedSendHour on, so they run LAST — the opted-in
+// learners they create would otherwise inflate the exact-count sweep tests above.
+test('refreshAutoSendHours moves auto learners to fallback on thin data, leaves manual ones', async () => {
+  const orig = config.personalizedSendHour;
+  config.personalizedSendHour = true;
+  try {
+    const autoId = 'rh-refresh-auto';
+    await runtime.processMessage(autoId, 'Hi', { today: '2026-10-01' });
+    await runtime.processMessage(autoId, '1', { today: '2026-10-01' }); // English
+    await runtime.processMessage(autoId, '1', { today: '2026-10-01' }); // Youth
+    await runtime.processMessage(autoId, 'REMIND ON', { today: '2026-10-01' }); // stays auto
+
+    const manualId = 'rh-refresh-manual';
+    await runtime.processMessage(manualId, 'Hi', { today: '2026-10-01' });
+    await runtime.processMessage(manualId, '1', { today: '2026-10-01' });
+    await runtime.processMessage(manualId, '1', { today: '2026-10-01' });
+    await runtime.processMessage(manualId, 'REMIND 7', { today: '2026-10-01' }); // manual override
+
+    assert.equal(db.getOrCreateProfile(manualId).reminderHourAuto, false, 'REMIND <hour> pins the hour');
+
+    await runtime.refreshAutoSendHours({ day: '2026-10-02' });
+
+    // Thin activity → auto learner is parked at the fallback (config.nudgeHour).
+    assert.equal(db.getOrCreateProfile(autoId).reminderHour, config.nudgeHour, 'auto learner uses the fallback hour');
+    // The manual learner's 7:00 is never touched.
+    assert.equal(db.getOrCreateProfile(manualId).reminderHour, 7, 'manual hour is left alone');
+  } finally {
+    config.personalizedSendHour = orig;
+  }
+});
+
+test('with personalization on, the sweep floor drops to nudgeEarliestHour', async () => {
+  const orig = config.personalizedSendHour;
+  config.personalizedSendHour = true;
+  try {
+    const uid = 'sweep-personalized';
+    await runtime.processMessage(uid, 'Hi', { today: '2026-11-01' });
+    await runtime.processMessage(uid, '1', { today: '2026-11-01' });
+    await runtime.processMessage(uid, '1', { today: '2026-11-01' });
+    await runtime.processMessage(uid, 'REMIND 9', { today: '2026-11-01' }); // early, manual hour
+    for (const id of youthIds.slice(0, youthIds.length - 2)) db.markLessonComplete(uid, id); // almost there
+
+    const sent = [];
+    // 9:00 is below config.nudgeHour but at/above the learner's hour and the floor.
+    await runtime.runNudgeSweep({ hour: 9, day: '2026-11-02' }, async (u, n) => sent.push({ u, t: n.type }));
+    assert.ok(sent.some((s) => s.u === uid), 'a 9:00 learner is sent in the morning when personalization is on');
+  } finally {
+    config.personalizedSendHour = orig;
+  }
 });

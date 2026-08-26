@@ -25,6 +25,7 @@ process.emitWarning = (warning, ...rest) => {
 const path = require('path');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
+const { ACTIVITY_EVENTS_SQL, bucketByEatHour } = require('./activityEvents');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const DB_PATH = process.env.ZEGA_DB || path.join(DATA_DIR, 'zega.db');
@@ -110,9 +111,12 @@ ensureColumn('profiles', 'name', 'TEXT'); // learner's name, for certificates
 ensureColumn('profiles', 'lite', 'INTEGER DEFAULT 0'); // data-saver: text lessons, no cards
 ensureColumn('profiles', 'resume', 'TEXT'); // in-progress lesson pointer {id,index} for "continue"
 ensureColumn('profiles', 'nudge_ignored', 'INTEGER DEFAULT 0'); // consecutive un-acted nudges (backoff)
+ensureColumn('profiles', 'reminder_hour_auto', 'INTEGER DEFAULT 1'); // 1 = reminder_hour is auto-derived; 0 = learner set it via REMIND
 ensureColumn('certificates', 'lang', 'TEXT'); // language template to render the certificate in
 // Speeds up the proactive-nudge candidate query at scale.
 db.exec('CREATE INDEX IF NOT EXISTS idx_profiles_due ON profiles (opt_in_reminders, last_active_day, reminder_hour)');
+// Speeds up the per-learner event-hour histogram behind personalized send-time.
+db.exec('CREATE INDEX IF NOT EXISTS idx_events_user_type ON events (user_id, type)');
 
 // ── Prepared statements ──────────────────────────────────────────────────
 const stmt = {
@@ -124,11 +128,26 @@ const stmt = {
     UPDATE profiles SET
       lang = ?, track = ?, xp = ?, level_index = ?, streak = ?,
       longest_streak = ?, last_active_day = ?, opt_in_reminders = ?,
-      reminder_hour = ?, last_nudge_day = ?, reminders_prompted = ?,
+      reminder_hour = ?, reminder_hour_auto = ?, last_nudge_day = ?, reminders_prompted = ?,
       lite = ?, resume = ?, nudge_ignored = ?, session = ?, updated_at = datetime('now')
     WHERE user_id = ?
   `),
   allProfiles: db.prepare('SELECT * FROM profiles'),
+  // Opted-in learners whose reminder hour is still auto-derived (never a manual
+  // "REMIND 19" setter) — the candidates for the personalized send-hour refresh.
+  autoReminderProfiles: db.prepare(
+    'SELECT * FROM profiles WHERE opt_in_reminders = 1 AND reminder_hour_auto = 1 AND track IS NOT NULL'
+  ),
+  // Set a derived hour, but only while it's still auto — the guard makes this a
+  // no-op for anyone who has since set their hour by hand.
+  setAutoReminderHour: db.prepare(
+    "UPDATE profiles SET reminder_hour = ?, updated_at = datetime('now') WHERE user_id = ? AND reminder_hour_auto = 1"
+  ),
+  // Learner-activity events within the lookback window (2nd param e.g. '-21 days'),
+  // for building the per-learner active-hour histogram. System events excluded.
+  activeEventTimes: db.prepare(
+    `SELECT ts FROM events WHERE user_id = ? AND ts >= datetime('now', ?) AND type IN (${ACTIVITY_EVENTS_SQL})`
+  ),
   setLastNudge: db.prepare('UPDATE profiles SET last_nudge_day = ? WHERE user_id = ?'),
   // A nudge went out: stamp the day and assume ignored until they return.
   recordNudgeSent: db.prepare(
@@ -194,6 +213,8 @@ function saveProfile(p) {
     p.lastActiveDay,
     p.optInReminders ? 1 : 0,
     p.reminderHour,
+    // Default a missing flag to auto (1); only an explicit false flips to manual.
+    p.reminderHourAuto === false ? 0 : 1,
     p.lastNudgeDay,
     p.remindersPrompted ? 1 : 0,
     p.lite ? 1 : 0,
@@ -220,6 +241,28 @@ function profilesDueForNudge(day, hour) {
   return stmt.dueForNudge.all(day, day, hour).map(rowToProfile);
 }
 
+// ── Personalized send-time ───────────────────────────────────────────────────
+/** Opted-in learners whose reminder hour is still auto-derived (not hand-set). */
+function autoReminderProfiles() {
+  return stmt.autoReminderProfiles.all().map(rowToProfile);
+}
+
+/** Set a learner's derived reminder hour — no-op if they've since set it by hand. */
+function setAutoReminderHour(userId, hour) {
+  stmt.setAutoReminderHour.run(hour, userId);
+}
+
+/**
+ * A 24-slot histogram of a learner's activity by local (EAT) hour, over the last
+ * `lookbackDays`. Only genuine learner-activity events count (see activityEvents).
+ */
+function activeHourCounts(userId, opts = {}) {
+  const lookbackDays = opts.lookbackDays || 21;
+  const tzOffsetHours = opts.tzOffsetHours || 0;
+  const rows = stmt.activeEventTimes.all(userId, `-${lookbackDays} days`);
+  return bucketByEatHour(rows, tzOffsetHours);
+}
+
 function rowToProfile(row) {
   return {
     userId: row.user_id,
@@ -232,6 +275,8 @@ function rowToProfile(row) {
     lastActiveDay: row.last_active_day || null,
     optInReminders: Boolean(row.opt_in_reminders),
     reminderHour: row.reminder_hour == null ? 19 : row.reminder_hour,
+    // Older rows (pre-migration) have NULL here → treat as auto-derived.
+    reminderHourAuto: row.reminder_hour_auto == null ? true : Boolean(row.reminder_hour_auto),
     lastNudgeDay: row.last_nudge_day || null,
     remindersPrompted: Boolean(row.reminders_prompted),
     name: row.name || null,
@@ -358,6 +403,9 @@ module.exports = {
   setLastNudge,
   recordNudgeSent,
   profilesDueForNudge,
+  autoReminderProfiles,
+  setAutoReminderHour,
+  activeHourCounts,
   getCompletedLessons,
   markLessonComplete,
   getEarnedBadges,

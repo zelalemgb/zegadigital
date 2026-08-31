@@ -18,6 +18,7 @@ const curriculum = require('./curriculum');
 const { levelInfo, LEVELS } = require('./gamification/xp');
 const segments = require('./learners/segments');
 const risk = require('./learners/risk');
+const completion = require('./learners/completion');
 
 // Backend-agnostic read: SQLite exposes a sync `.prepare().all()`, Postgres an
 // async `pool.query()`. `await` handles both. The SQL below is standard/portable
@@ -85,9 +86,18 @@ async function summary(opts = {}) {
       segment: segments.segmentOf(profLite, prog, cert, nowD),
       risk: score,
       savable: risk.isSavable(score, prog),
+      // Rounded completion %, matching the roster's per-learner `pct` (done/total).
+      pct: prog.total ? Math.round((prog.done / prog.total) * 100) : 0,
     };
   });
   const segmentCounts = segments.tally(perLearner.map((x) => x.segment));
+
+  // ── Completion depth (50% → done) ──────────────────────────────────────────
+  // Distribution of near-finishers by how far through their track they are.
+  // `tracked` is the denominator (learners who've picked a track); `atLeast50`
+  // is how many of them are ≥50% done (the sum of the bands).
+  const completionCounts = completion.tally(perLearner.map((x) => x.pct));
+  const atLeast50 = Object.values(completionCounts).reduce((n, c) => n + c, 0);
   const riskBands = { high: 0, medium: 0, low: 0 };
   let savable = 0;
   for (const x of perLearner) {
@@ -165,6 +175,7 @@ async function summary(opts = {}) {
     learningGain: learning,
     certificates: { issued: certificatesIssued, learners: certifiedLearners, byTrack: certByTrack },
     segments: { counts: segmentCounts, meta: segments.SEGMENTS },
+    completion: { counts: completionCounts, meta: completion.BANDS, atLeast50, tracked: pickedTrack, floor: completion.FLOOR },
     atRisk: { bands: riskBands, savable },
     badges: { awarded: badgesAwarded, byBadge: badgeRows },
     reminders: { optedIn, nudgesSent },

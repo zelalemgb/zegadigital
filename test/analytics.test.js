@@ -152,3 +152,38 @@ test('learners returns masked, per-user progress rows', async () => {
   // Masking never leaks a full phone number.
   for (const r of rows) assert.ok(!/^\d{5,}$/.test(r.id), 'ids are masked');
 });
+
+test('summary reports the completion-depth distribution (50% → done)', async () => {
+  const curriculum = require('../src/curriculum');
+  const { completionBand } = require('../src/learners/completion');
+  const youthIds = curriculum.allLessonIds(getContent('en'), 'youth');
+
+  const before = await analytics.summary({ today: DAY });
+
+  // Onboard a fresh learner to youth and complete all but one lesson → a high band.
+  await send('depth-user', 'Hi');
+  await send('depth-user', '1'); // English
+  await send('depth-user', '1'); // Youth
+  const doneCount = youthIds.length - 1;
+  for (const id of youthIds.slice(0, doneCount)) db.markLessonComplete('depth-user', id);
+  const expectedBand = completionBand(Math.round((doneCount / youthIds.length) * 100));
+
+  const after = await analytics.summary({ today: DAY });
+  const cmp = after.completion;
+
+  // Shape: every band present, bands sum to the ≥50% total, denominator is tracked learners.
+  const bandKeys = cmp.meta.map((b) => b.key);
+  assert.deepEqual(Object.keys(cmp.counts).sort(), [...bandKeys].sort());
+  const sum = Object.values(cmp.counts).reduce((n, c) => n + c, 0);
+  assert.equal(sum, cmp.atLeast50, 'bands sum to the ≥50% total');
+  assert.equal(cmp.tracked, after.reach.pickedTrack, 'denominator is learners who picked a track');
+  assert.equal(cmp.floor, 50);
+
+  // The new near-finisher lands in the expected band and lifts the ≥50% count by one.
+  assert.equal(cmp.atLeast50, before.completion.atLeast50 + 1, 'one more learner is ≥50% done');
+  assert.equal(
+    cmp.counts[expectedBand],
+    (before.completion.counts[expectedBand] || 0) + 1,
+    `the learner lands in the ${expectedBand} band`
+  );
+});

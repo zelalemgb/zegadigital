@@ -98,6 +98,72 @@ async function summary(opts = {}) {
   // is how many of them are ≥50% done (the sum of the bands).
   const completionCounts = completion.tally(perLearner.map((x) => x.pct));
   const atLeast50 = Object.values(completionCounts).reduce((n, c) => n + c, 0);
+
+  // ── Youth vs Adult + language split (partner-report breakdowns) ─────────────
+  // One pass over profiles builds both the per-track funnel and the per-language
+  // completion mix. `avgPct` is the mean completion % of that track's learners.
+  const TRACKS = ['youth', 'adult'];
+  const trackAgg = Object.fromEntries(
+    TRACKS.map((t) => [t, { learners: 0, started: 0, completed: 0, certified: 0, lessonsDone: 0, pctSum: 0, total: trackTotals[t] || 0 }])
+  );
+  const langAgg = new Map();
+  for (const p of profiles) {
+    const done = completedByUser.get(p.user_id) || 0;
+    const t = p.track;
+    if (t && trackAgg[t]) {
+      const b = trackAgg[t];
+      b.learners += 1;
+      b.lessonsDone += done;
+      if (done >= 1) b.started += 1;
+      if (b.total && done >= b.total) b.completed += 1;
+      if (certMap.get(p.user_id) && certMap.get(p.user_id).has(t)) b.certified += 1;
+      b.pctSum += b.total ? (done / b.total) * 100 : 0;
+    }
+    const lang = p.lang || 'en';
+    const la = langAgg.get(lang) || { lang, learners: 0, completedAny: 0, trackCompleted: 0, lessonsDone: 0 };
+    la.learners += 1;
+    la.lessonsDone += done;
+    if (done >= 1) la.completedAny += 1;
+    const ltot = t ? trackTotals[t] || 0 : 0;
+    if (ltot && done >= ltot) la.trackCompleted += 1;
+    langAgg.set(lang, la);
+  }
+  const tracks = TRACKS.map((t) => {
+    const b = trackAgg[t];
+    return {
+      track: t, learners: b.learners, started: b.started, completed: b.completed,
+      certified: b.certified, lessonsDone: b.lessonsDone, total: b.total,
+      avgPct: b.learners ? Math.round(b.pctSum / b.learners) : 0,
+    };
+  });
+  const byLang = [...langAgg.values()].sort((a, b) => b.learners - a.learners);
+
+  // ── Module engagement among in-progress learners ────────────────────────────
+  // Which modules the learners who HAVEN'T finished their track are working
+  // through. A learner who completed the track completed every lesson in it, so
+  // per-lesson completions by in-progress learners = total completions − the
+  // track's completers — no per-row join needed. `completions` is the all-learner
+  // total for context; `inProgress` is the in-progress-only count the card ranks.
+  const perLessonDone = new Map(
+    (await rows('SELECT lesson_id, COUNT(*) c FROM lesson_progress GROUP BY lesson_id')).map((r) => [r.lesson_id, r.c])
+  );
+  const moduleEngagement = [];
+  for (const t of TRACKS) {
+    const completers = trackAgg[t].completed;
+    for (const m of curriculum.modulesForTrack(content, t)) {
+      let completions = 0;
+      let inProgress = 0;
+      for (const id of m.lessonIds) {
+        const d = perLessonDone.get(id) || 0;
+        completions += d;
+        inProgress += Math.max(0, d - completers);
+      }
+      moduleEngagement.push({ track: t, module: m.label, completions, inProgress });
+    }
+  }
+  // Rank by how much in-progress learners engage with each module (their
+  // "preference"), most-engaged first, rather than curriculum order.
+  moduleEngagement.sort((a, b) => b.inProgress - a.inProgress);
   const riskBands = { high: 0, medium: 0, low: 0 };
   let savable = 0;
   for (const x of perLearner) {
@@ -176,6 +242,9 @@ async function summary(opts = {}) {
     certificates: { issued: certificatesIssued, learners: certifiedLearners, byTrack: certByTrack },
     segments: { counts: segmentCounts, meta: segments.SEGMENTS },
     completion: { counts: completionCounts, meta: completion.BANDS, atLeast50, tracked: pickedTrack, floor: completion.FLOOR },
+    tracks,
+    byLang,
+    moduleEngagement,
     atRisk: { bands: riskBands, savable },
     badges: { awarded: badgesAwarded, byBadge: badgeRows },
     reminders: { optedIn, nudgesSent },

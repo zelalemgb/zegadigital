@@ -124,6 +124,11 @@ function render(data) {
   const riskColor = (r) => (r >= 55 ? "#c0392b" : r >= 30 ? "#d98c00" : "#1f8f57");
   const comp = s.completion || { counts: {}, meta: [], tracked: 0, atLeast50: 0 };
   const compMax = Math.max(1, ...comp.meta.map((b) => comp.counts[b.key] || 0));
+  const tracks = s.tracks || [];
+  const byLang = s.byLang || [];
+  const modEng = s.moduleEngagement || [];
+  const modMax = Math.max(1, ...modEng.map((m) => m.inProgress));
+  const trackLabel = { youth: "Youth", adult: "Adult" };
 
   app.innerHTML = `
     <div class="grid kpis">
@@ -188,6 +193,56 @@ function render(data) {
         <div class="name"><b>≥50% complete</b> <span style="color:#5c6b86">— of ${fmt(comp.tracked)} learners who picked a track</span></div>
         <div class="num"><b>${fmt(comp.atLeast50)}</b></div>
       </div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <h2>Youth vs Adult</h2>
+        <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Reach and progress by track — the full funnel, not just certificates.</div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Track</th><th class="num">Learners</th><th class="num">Started</th><th class="num">Completed</th><th class="num">Certified</th><th class="num">Avg&nbsp;%</th></tr></thead>
+            <tbody>
+            ${tracks.map((t) => `
+              <tr>
+                <td><span class="pill ${t.track}">${esc(trackLabel[t.track] || t.track)}</span></td>
+                <td class="num">${fmt(t.learners)}</td>
+                <td class="num">${fmt(t.started)}</td>
+                <td class="num">${fmt(t.completed)}</td>
+                <td class="num">${fmt(t.certified)}</td>
+                <td class="num">${pct(t.avgPct)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div style="color:#5c6b86;font-size:12px;margin-top:8px">Started = completed ≥1 lesson · Completed = finished every lesson in the track · Avg % = mean completion across that track's learners.</div>
+      </div>
+      <div class="card">
+        <h2>Language &amp; completion</h2>
+        <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Language mix, and how far each language group gets.</div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Language</th><th class="num">Learners</th><th class="num">Completed ≥1</th><th class="num">Finished track</th></tr></thead>
+            <tbody>
+            ${byLang.map((l) => `
+              <tr>
+                <td>${esc((l.lang || "").toUpperCase() || "—")}</td>
+                <td class="num">${fmt(l.learners)}</td>
+                <td class="num">${fmt(l.completedAny)}</td>
+                <td class="num">${fmt(l.trackCompleted)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div style="color:#5c6b86;font-size:12px;margin-top:8px">“Completed ≥1” is the base for the completion-language ratio; “Finished track” did every lesson.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Module engagement · in-progress learners <span class="muted" style="text-transform:none;font-weight:400">— lessons completed within each module by learners who haven't finished their track</span></h2>
+      <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Modules ranked by how much learners still working through the programme engage with them — their revealed preference before the finish.</div>
+      ${modEng.map((m) => `<div class="row"><div class="name"><span class="pill ${m.track}">${esc(trackLabel[m.track] || m.track)}</span> ${esc(m.module)}</div>${bar(m.inProgress, modMax)}<div class="num">${fmt(m.inProgress)}</div></div>`).join("")}
+      ${modEng.length ? "" : '<div class="muted">No in-progress engagement yet.</div>'}
     </section>
 
     <section class="grid two">

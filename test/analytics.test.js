@@ -187,3 +187,41 @@ test('summary reports the completion-depth distribution (50% → done)', async (
     `the learner lands in the ${expectedBand} band`
   );
 });
+
+test('summary breaks down Youth vs Adult, language, and module engagement', async () => {
+  const a = await analytics.summary({ today: DAY });
+
+  // ── Youth vs Adult ──
+  const trackMap = Object.fromEntries(a.tracks.map((t) => [t.track, t]));
+  assert.ok(trackMap.youth && trackMap.adult, 'both tracks present');
+  const trackLearners = a.tracks.reduce((n, t) => n + t.learners, 0);
+  assert.equal(trackLearners, a.reach.pickedTrack, 'per-track learners sum to pickedTrack');
+  const trackStarted = a.tracks.reduce((n, t) => n + t.started, 0);
+  assert.equal(trackStarted, a.reach.startedLesson, 'per-track "started" sums to the total');
+  const trackCompleted = a.tracks.reduce((n, t) => n + t.completed, 0);
+  assert.equal(trackCompleted, a.reach.completedTrack, 'per-track completions sum to the total');
+  const trackCertified = a.tracks.reduce((n, t) => n + t.certified, 0);
+  assert.equal(trackCertified, a.certificates.issued, 'per-track certified sums to certificates issued');
+  for (const t of a.tracks) assert.ok(t.avgPct >= 0 && t.avgPct <= 100, 'avgPct is a percentage');
+
+  // ── Language split ──
+  const langLearners = a.byLang.reduce((n, l) => n + l.learners, 0);
+  assert.equal(langLearners, a.reach.users, 'language buckets partition all learners');
+  const langCompleted = a.byLang.reduce((n, l) => n + l.completedAny, 0);
+  assert.equal(langCompleted, a.reach.startedLesson, 'completed≥1 by language sums to startedLesson');
+  // Sorted by learners, descending.
+  for (let i = 1; i < a.byLang.length; i++) assert.ok(a.byLang[i - 1].learners >= a.byLang[i].learners, 'byLang sorted desc');
+
+  // ── Module engagement (in-progress learners) ──
+  assert.ok(Array.isArray(a.moduleEngagement) && a.moduleEngagement.length >= 2, 'modules present');
+  for (const m of a.moduleEngagement) {
+    assert.ok(['youth', 'adult'].includes(m.track), 'module tagged with a track');
+    assert.ok(typeof m.module === 'string' && m.module.length, 'module has a label');
+    assert.ok(m.inProgress >= 0, 'in-progress count is non-negative');
+    assert.ok(m.inProgress <= m.completions, 'in-progress never exceeds total completions');
+  }
+  // Ranked by engagement, most-preferred first.
+  for (let i = 1; i < a.moduleEngagement.length; i++) {
+    assert.ok(a.moduleEngagement[i - 1].inProgress >= a.moduleEngagement[i].inProgress, 'modules ranked desc by engagement');
+  }
+});

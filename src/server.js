@@ -355,10 +355,13 @@ app.get('/admin', requireAdmin, (_req, res) => {
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
-app.get('/admin/api', requireAdmin, async (_req, res) => {
+app.get('/admin/api', requireAdmin, async (req, res) => {
   try {
+    // Report date-range filter (all|today|week|month); anything else → all-time.
+    const allowed = new Set(['all', 'today', 'week', 'month']);
+    const range = allowed.has(req.query.range) ? req.query.range : 'all';
     res.json({
-      summary: await analytics.summary(),
+      summary: await analytics.summary({ range }),
       lessons: await analytics.lessonBreakdown(),
       learners: await analytics.learners(),
     });

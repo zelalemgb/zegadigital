@@ -29,6 +29,10 @@
     color: var(--ink); padding: 8px 14px; border-radius: 8px; cursor: pointer;
   }
   button:hover { background: #fafbfc; }
+  .range { display: inline-flex; gap: 6px; margin-right: 10px; }
+  .range button { padding: 8px 12px; }
+  .range button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .range button.active:hover { background: var(--ink); }
   main { padding: 24px; max-width: 1200px; margin: 0 auto; }
   .grid { display: grid; gap: 16px; }
   .kpis { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); margin-bottom: 20px; }
@@ -85,6 +89,12 @@
     <div class="sub" id="asof">Loading…</div>
   </div>
   <div class="spacer"></div>
+  <div class="range" id="range">
+    <button data-r="all" class="active">All</button>
+    <button data-r="today">Today</button>
+    <button data-r="week">1 week</button>
+    <button data-r="month">1 month</button>
+  </div>
   <button id="refresh">↻ Refresh</button>
   <button id="signout">↪ Sign out</button>
 </header>
@@ -110,7 +120,9 @@ function kpi(label, value, foot = "") {
 function render(data) {
   const s = data.summary, lessons = data.lessons, learners = data.learners;
   const app = $("#app");
-  $("#asof").textContent = "As of " + s.generatedFor + " · " + s.reach.users + " learners";
+  const RANGE_LABEL = { all: "All time", today: "Today", week: "Last 7 days", month: "Last 30 days" };
+  const rLabel = RANGE_LABEL[s.range] || "All time";
+  $("#asof").textContent = "As of " + s.generatedFor + " · " + rLabel + " · " + fmt(s.reach.users) + (s.windowed ? " new learners" : " learners");
 
   // Language split (derived from roster)
   const langCount = {};
@@ -127,18 +139,20 @@ function render(data) {
   const tracks = s.tracks || [];
   const byLang = s.byLang || [];
   const modEng = s.moduleEngagement || [];
-  const modMax = Math.max(1, ...modEng.map((m) => m.inProgress));
+  const modMax = Math.max(1, ...modEng.map((m) => m.completed));
   const trackLabel = { youth: "Youth", adult: "Adult" };
+  // When a range is active, tag snapshot cards that stay all-time.
+  const allTimeTag = s.windowed ? ` <span class="muted" style="font-weight:400;text-transform:none;font-size:11px">· all-time</span>` : "";
 
   app.innerHTML = `
     <div class="grid kpis">
-      ${kpi("Learners", s.reach.users, fmt(s.reach.pickedTrack) + " picked a track")}
-      ${kpi("Active today", s.reach.activeToday, fmt(s.reach.distinctActive) + " ever active")}
-      ${kpi("Lessons done", learners.reduce((n, l) => n + l.lessonsDone, 0), fmt(s.reach.startedLesson) + " started ≥1")}
+      ${kpi(s.windowed ? "New learners" : "Learners", s.reach.users, fmt(s.reach.pickedTrack) + " picked a track")}
+      ${kpi("Active today", s.reach.activeToday, fmt(s.reach.distinctActive) + (s.windowed ? " active in period" : " ever active"))}
+      ${kpi("Lessons completed", s.reach.lessonsCompleted, fmt(s.reach.startedLesson) + " learners started ≥1")}
       ${kpi("Track completions", s.reach.completedTrack, "finished a full track")}
       ${kpi("Certificates earned", (s.certificates ? s.certificates.learners : 0), (s.certificates && s.certificates.byTrack && s.certificates.byTrack.length ? s.certificates.byTrack.map((t) => t.track + ": " + fmt(t.c)).join(" · ") : "completed + passed the quiz"))}
       ${kpi("Quiz pass rate", pct(s.quizzes.passRate), fmt(s.quizzes.attempts) + " attempts")}
-      ${kpi("Avg learning gain", g.avgGainPoints == null ? "—" : "+" + g.avgGainPoints + " pts", fmt(g.bothTaken) + " took both tests")}
+      ${kpi("Avg learning gain" + (s.windowed ? " ¹" : ""), g.avgGainPoints == null ? "—" : "+" + g.avgGainPoints + " pts", fmt(g.bothTaken) + " took both tests" + (s.windowed ? " · all-time" : ""))}
     </div>
 
     <section class="grid two">
@@ -161,7 +175,7 @@ function render(data) {
 
     <section class="grid two">
       <div class="card">
-        <h2>Learner segments</h2>
+        <h2>Learner segments${allTimeTag}</h2>
         <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Every learner in exactly one bucket — the base for targeted reminders &amp; at-risk outreach.</div>
         ${(s.segments ? s.segments.meta : []).map((m) => {
           const c = (s.segments.counts && s.segments.counts[m.key]) || 0;
@@ -169,7 +183,7 @@ function render(data) {
         }).join("")}
       </div>
       <div class="card">
-        <h2>At-risk learners</h2>
+        <h2>At-risk learners${allTimeTag}</h2>
         <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Likely to drop off before certifying — outreach targets.</div>
         ${s.atRisk ? [["High risk","high","#c0392b"],["Medium risk","medium","#d98c00"],["Low risk","low","#1f8f57"]].map(([label,key,col]) => {
           const c = s.atRisk.bands[key] || 0;
@@ -183,7 +197,7 @@ function render(data) {
     </section>
 
     <section class="card">
-      <h2>Completion depth <span class="muted" style="text-transform:none;font-weight:400">— learners 50%+ through their track, by how far they've got</span></h2>
+      <h2>Completion depth <span class="muted" style="text-transform:none;font-weight:400">— learners 50%+ through their track, by how far they've got</span>${allTimeTag}</h2>
       <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Where near-finishers cluster. “Completed” has done every lesson; “90–99%” is one lesson from done — the prime close-the-gap targets.</div>
       ${comp.meta.map((b) => {
         const c = comp.counts[b.key] || 0;
@@ -239,15 +253,15 @@ function render(data) {
     </section>
 
     <section class="card">
-      <h2>Module engagement · in-progress learners <span class="muted" style="text-transform:none;font-weight:400">— lessons completed within each module by learners who haven't finished their track</span></h2>
-      <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Modules ranked by how much learners still working through the programme engage with them — their revealed preference before the finish.</div>
-      ${modEng.map((m) => `<div class="row"><div class="name"><span class="pill ${m.track}">${esc(trackLabel[m.track] || m.track)}</span> ${esc(m.module)}</div>${bar(m.inProgress, modMax)}<div class="num">${fmt(m.inProgress)}</div></div>`).join("")}
+      <h2>Module engagement <span class="muted" style="text-transform:none;font-weight:400">— lessons completed within each module ${s.windowed ? "in the selected period" : "(all-time)"}</span></h2>
+      <div style="color:#5c6b86;font-size:13px;margin:-4px 0 12px">Modules ranked by lessons completed — the revealed preference of whoever's working through the programme.</div>
+      ${modEng.map((m) => `<div class="row"><div class="name"><span class="pill ${m.track}">${esc(trackLabel[m.track] || m.track)}</span> ${esc(m.module)}</div>${bar(m.completed, modMax)}<div class="num">${fmt(m.completed)}</div></div>`).join("")}
       ${modEng.length ? "" : '<div class="muted">No in-progress engagement yet.</div>'}
     </section>
 
     <section class="grid two">
       <div class="card">
-        <h2>Skill levels</h2>
+        <h2>Skill levels${allTimeTag}</h2>
         ${s.xp.byLevel.map((l) => `<div class="row"><div class="name">${esc(l.name)}</div>${bar(l.count, levelMax)}<div class="num">${fmt(l.count)}</div></div>`).join("")}
       </div>
       <div class="card">
@@ -347,12 +361,13 @@ function wireSort(tableId, dataRef) {
   });
 }
 
+let currentRange = "all";
 async function load() {
   const app = $("#app");
   try {
     // Build the URL from origin (never includes userinfo) so the request works
     // even if the page was opened with credentials embedded in the address bar.
-    const res = await fetch(location.origin + "/admin/api", { headers: { Accept: "application/json" } });
+    const res = await fetch(location.origin + "/admin/api?range=" + encodeURIComponent(currentRange), { headers: { Accept: "application/json" } });
     if (res.status === 401) { location.href = "/admin/login"; return; } // session expired
     if (!res.ok) throw new Error("HTTP " + res.status);
     render(await res.json());
@@ -360,6 +375,14 @@ async function load() {
     app.innerHTML = `<div class="err">Could not load analytics: ${esc(e.message)}. Try refreshing.</div>`;
   }
 }
+// Date-range picker: highlight the choice and reload for that window.
+$("#range").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-r]");
+  if (!btn) return;
+  currentRange = btn.dataset.r;
+  for (const b of $("#range").querySelectorAll("button")) b.classList.toggle("active", b === btn);
+  load();
+});
 $("#refresh").addEventListener("click", load);
 
 // Cookie session → logout is a real server round-trip that clears the cookie.

@@ -217,11 +217,43 @@ test('summary breaks down Youth vs Adult, language, and module engagement', asyn
   for (const m of a.moduleEngagement) {
     assert.ok(['youth', 'adult'].includes(m.track), 'module tagged with a track');
     assert.ok(typeof m.module === 'string' && m.module.length, 'module has a label');
-    assert.ok(m.inProgress >= 0, 'in-progress count is non-negative');
-    assert.ok(m.inProgress <= m.completions, 'in-progress never exceeds total completions');
+    assert.ok(m.completed >= 0, 'completion count is non-negative');
   }
-  // Ranked by engagement, most-preferred first.
+  // Ranked by completions in the period, most-preferred first.
   for (let i = 1; i < a.moduleEngagement.length; i++) {
-    assert.ok(a.moduleEngagement[i - 1].inProgress >= a.moduleEngagement[i].inProgress, 'modules ranked desc by engagement');
+    assert.ok(a.moduleEngagement[i - 1].completed >= a.moduleEngagement[i].completed, 'modules ranked desc by completions');
   }
+});
+
+test('sinceFor computes the range floor dates', () => {
+  assert.equal(analytics.sinceFor('all', '2026-08-01'), null);
+  assert.equal(analytics.sinceFor('today', '2026-08-01'), '2026-08-01');
+  assert.equal(analytics.sinceFor('week', '2026-08-01'), '2026-07-26', 'last 7 days');
+  assert.equal(analytics.sinceFor('month', '2026-08-01'), '2026-07-03', 'last 30 days');
+});
+
+test('range filter windows flow metrics by join date; snapshots stay all-time', async () => {
+  const uid = 'window-old';
+  await send(uid, 'Hi');
+  await send(uid, '1'); // English
+  await send(uid, '1'); // Youth
+  // Backdate this learner's join far outside any window.
+  db.db.prepare("UPDATE profiles SET created_at = '2020-01-01 00:00:00' WHERE user_id = ?").run(uid);
+
+  const all = await analytics.summary({ today: DAY, range: 'all' });
+  const month = await analytics.summary({ today: DAY, range: 'month' });
+
+  assert.equal(all.windowed, false);
+  assert.equal(month.windowed, true);
+  assert.equal(month.range, 'month');
+
+  // The backdated learner counts in the all-time cohort but not the month cohort.
+  assert.ok(all.reach.users > month.reach.users, 'windowing drops learners who joined before the window');
+
+  // Snapshot cards (segments) are all-time in BOTH — they never shrink with the range.
+  const segSum = (s) => Object.values(s.segments.counts).reduce((n, c) => n + c, 0);
+  assert.equal(segSum(all), segSum(month), 'segments stay all-time regardless of range');
+  assert.equal(segSum(all), all.reach.users, 'all-time segments cover every learner');
+  // completion.tracked is the all-time denominator, unaffected by the window.
+  assert.equal(month.completion.tracked, all.completion.tracked, 'completion denominator is all-time');
 });

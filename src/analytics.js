@@ -33,6 +33,17 @@ async function summary(opts = {}) {
   const today = opts.today || new Date().toISOString().slice(0, 10);
   const content = getContent('en');
 
+  // Time-range filter. `range` ∈ all|today|week|month → a `since` date (null =
+  // all-time). Learner/acquisition metrics use the join cohort (learners who
+  // joined within the window); activity metrics use a record-timestamp clause.
+  // Snapshot cards (segments, at-risk, completion depth, levels, streaks) are
+  // "right now" states that can't be rewound, so they stay all-time.
+  const range = opts.range || 'all';
+  const since = sinceFor(range, today);
+  const windowed = Boolean(since);
+  const inWindow = (ts) => { if (!since) return true; const d = dayOf(ts); return d != null && d >= since; };
+  const tsClause = (col) => (since ? ` AND ${col} >= '${since}'` : '');
+
   const profiles = await rows('SELECT * FROM profiles');
   const lessonRows = await rows('SELECT user_id, COUNT(*) c FROM lesson_progress GROUP BY user_id');
   const completedByUser = new Map(lessonRows.map((r) => [r.user_id, r.c]));
@@ -40,14 +51,19 @@ async function summary(opts = {}) {
     youth: curriculum.allLessonIds(content, 'youth').length,
     adult: curriculum.allLessonIds(content, 'adult').length,
   };
+  // The acquisition cohort: learners who joined within the window (all, all-time).
+  const cohort = windowed ? profiles.filter((p) => inWindow(p.created_at)) : profiles;
+  const doneOf = (p) => completedByUser.get(p.user_id) || 0;
 
-  // ── Reach & engagement funnel ──────────────────────────────────────────
-  const users = profiles.length;
-  const pickedTrack = profiles.filter((p) => p.track).length;
-  const startedLesson = profiles.filter((p) => (completedByUser.get(p.user_id) || 0) >= 1).length;
-  const completedTrack = profiles.filter(
-    (p) => p.track && trackTotals[p.track] && (completedByUser.get(p.user_id) || 0) >= trackTotals[p.track]
+  // ── Reach & engagement funnel (the join cohort) ─────────────────────────
+  const users = cohort.length;
+  const pickedTrack = cohort.filter((p) => p.track).length;
+  const startedLesson = cohort.filter((p) => doneOf(p) >= 1).length;
+  const completedTrack = cohort.filter(
+    (p) => p.track && trackTotals[p.track] && doneOf(p) >= trackTotals[p.track]
   ).length;
+  // Lessons completed within the window (activity, by completion date).
+  const lessonsCompleted = (await rows(`SELECT COUNT(*) c FROM lesson_progress WHERE 1=1${tsClause('completed_at')}`))[0].c || 0;
 
   // ── Learner segments (Recency / Frequency / Progress) ──────────────────────
   // Two batch queries build per-user cert + passed-quiz maps; the segment for
@@ -107,7 +123,7 @@ async function summary(opts = {}) {
     TRACKS.map((t) => [t, { learners: 0, started: 0, completed: 0, certified: 0, lessonsDone: 0, pctSum: 0, total: trackTotals[t] || 0 }])
   );
   const langAgg = new Map();
-  for (const p of profiles) {
+  for (const p of cohort) {
     const done = completedByUser.get(p.user_id) || 0;
     const t = p.track;
     if (t && trackAgg[t]) {
@@ -138,32 +154,23 @@ async function summary(opts = {}) {
   });
   const byLang = [...langAgg.values()].sort((a, b) => b.learners - a.learners);
 
-  // ── Module engagement among in-progress learners ────────────────────────────
-  // Which modules the learners who HAVEN'T finished their track are working
-  // through. A learner who completed the track completed every lesson in it, so
-  // per-lesson completions by in-progress learners = total completions − the
-  // track's completers — no per-row join needed. `completions` is the all-learner
-  // total for context; `inProgress` is the in-progress-only count the card ranks.
+  // ── Module engagement (activity within the window) ──────────────────────────
+  // Lessons completed within each module in the selected period (all-time when
+  // no range), mapped lesson → module and ranked most-engaged first — the
+  // revealed module preference of whoever is working through the programme.
   const perLessonDone = new Map(
-    (await rows('SELECT lesson_id, COUNT(*) c FROM lesson_progress GROUP BY lesson_id')).map((r) => [r.lesson_id, r.c])
+    (await rows(`SELECT lesson_id, COUNT(*) c FROM lesson_progress WHERE 1=1${tsClause('completed_at')} GROUP BY lesson_id`)).map((r) => [r.lesson_id, r.c])
   );
   const moduleEngagement = [];
   for (const t of TRACKS) {
-    const completers = trackAgg[t].completed;
     for (const m of curriculum.modulesForTrack(content, t)) {
-      let completions = 0;
-      let inProgress = 0;
-      for (const id of m.lessonIds) {
-        const d = perLessonDone.get(id) || 0;
-        completions += d;
-        inProgress += Math.max(0, d - completers);
-      }
-      moduleEngagement.push({ track: t, module: m.label, completions, inProgress });
+      let completed = 0;
+      for (const id of m.lessonIds) completed += perLessonDone.get(id) || 0;
+      moduleEngagement.push({ track: t, module: m.label, completed });
     }
   }
-  // Rank by how much in-progress learners engage with each module (their
-  // "preference"), most-engaged first, rather than curriculum order.
-  moduleEngagement.sort((a, b) => b.inProgress - a.inProgress);
+  // Ranked by completions in the period (module "preference"), most first.
+  moduleEngagement.sort((a, b) => b.completed - a.completed);
   const riskBands = { high: 0, medium: 0, low: 0 };
   let savable = 0;
   for (const x of perLearner) {
@@ -189,10 +196,11 @@ async function summary(opts = {}) {
     "SELECT substr(CAST(ts AS TEXT),1,10) d, COUNT(DISTINCT user_id) u, COUNT(*) n FROM events GROUP BY d ORDER BY d DESC LIMIT 14"
   );
   const activeToday = (eventDays.find((r) => r.d === today) || {}).u || 0;
-  const distinctActive = (await rows('SELECT COUNT(DISTINCT user_id) u FROM events'))[0].u;
+  // Distinct learners active within the window (all-time when no range).
+  const distinctActive = (await rows(`SELECT COUNT(DISTINCT user_id) u FROM events WHERE 1=1${tsClause('ts')}`))[0].u;
 
-  // ── Quizzes ─────────────────────────────────────────────────────────────
-  const quizEvents = (await rows("SELECT data FROM events WHERE type = 'quizFinished'")).map((r) => safe(r.data));
+  // ── Quizzes (attempts within the window) ────────────────────────────────
+  const quizEvents = (await rows(`SELECT data FROM events WHERE type = 'quizFinished'${tsClause('ts')}`)).map((r) => safe(r.data));
   const quizAttempts = quizEvents.length;
   const quizPasses = quizEvents.filter((q) => q && q.passed).length;
   const quizAvgPct = avg(quizEvents.map((q) => (q && q.total ? (q.score / q.total) * 100 : 0)));
@@ -205,30 +213,39 @@ async function summary(opts = {}) {
   // ── Learning gain (headline impact) ─────────────────────────────────────
   const learning = await learningGain();
 
-  // ── Certificates earned (finished a track + passed the quiz, name confirmed) ─
+  // ── Certificates earned (issued within the window) ──────────────────────────
   // One row per learner+track, so COUNT(*) is certificates issued and
-  // COUNT(DISTINCT user_id) is how many people are certified.
-  const certAgg = (await rows('SELECT COUNT(*) c, COUNT(DISTINCT user_id) u FROM certificates'))[0];
-  const certByTrack = await rows('SELECT track, COUNT(*) c FROM certificates GROUP BY track');
+  // COUNT(DISTINCT user_id) is how many people are certified — in the window.
+  const certAgg = (await rows(`SELECT COUNT(*) c, COUNT(DISTINCT user_id) u FROM certificates WHERE 1=1${tsClause('issued_at')}`))[0];
+  const certByTrack = await rows(`SELECT track, COUNT(*) c FROM certificates WHERE 1=1${tsClause('issued_at')} GROUP BY track`);
   const certificatesIssued = certAgg.c || 0;
   const certifiedLearners = certAgg.u || 0;
+  // The join cohort's certified count (their current state) — for the cohort funnel.
+  const certifiedCohort = cohort.filter((p) => p.track && certMap.get(p.user_id) && certMap.get(p.user_id).has(p.track)).length;
+  // All-time learners-with-a-track — the completion-depth card's denominator
+  // (that card is an all-time snapshot, unaffected by the range).
+  const pickedTrackAll = profiles.filter((p) => p.track).length;
 
   // ── Badges & reminders ──────────────────────────────────────────────────
   const badgeRows = await rows('SELECT badge_id, COUNT(*) c FROM badges GROUP BY badge_id ORDER BY c DESC');
   const badgesAwarded = badgeRows.reduce((n, b) => n + b.c, 0);
-  const nudgesSent = (await rows("SELECT COUNT(*) c FROM events WHERE type = 'nudgeSent'"))[0].c;
+  const nudgesSent = (await rows(`SELECT COUNT(*) c FROM events WHERE type = 'nudgeSent'${tsClause('ts')}`))[0].c;
 
   return {
     generatedFor: today,
-    reach: { users, pickedTrack, startedLesson, completedTrack, distinctActive, activeToday },
+    range,
+    since,
+    windowed,
+    reach: { users, pickedTrack, startedLesson, completedTrack, lessonsCompleted, distinctActive, activeToday },
     funnel: [
       { stage: 'Joined', count: users },
       { stage: 'Picked track', count: pickedTrack },
       { stage: 'Completed ≥1 lesson', count: startedLesson },
       { stage: 'Completed track', count: completedTrack },
-      { stage: 'Earned certificate', count: certifiedLearners },
+      { stage: 'Earned certificate', count: certifiedCohort },
     ],
-    xp: { total: totalXp, avg: users ? Math.round(totalXp / users) : 0, byLevel },
+    // XP / levels are an all-time snapshot, so the average is over all learners.
+    xp: { total: totalXp, avg: profiles.length ? Math.round(totalXp / profiles.length) : 0, byLevel },
     streaks: { avg: round1(avg(streaks)), max: streaks.length ? Math.max(...streaks) : 0, buckets: streakBuckets },
     retention: { activityByDay: eventDays.reverse() },
     quizzes: {
@@ -241,7 +258,7 @@ async function summary(opts = {}) {
     learningGain: learning,
     certificates: { issued: certificatesIssued, learners: certifiedLearners, byTrack: certByTrack },
     segments: { counts: segmentCounts, meta: segments.SEGMENTS },
-    completion: { counts: completionCounts, meta: completion.BANDS, atLeast50, tracked: pickedTrack, floor: completion.FLOOR },
+    completion: { counts: completionCounts, meta: completion.BANDS, atLeast50, tracked: pickedTrackAll, floor: completion.FLOOR },
     tracks,
     byLang,
     moduleEngagement,
@@ -458,4 +475,26 @@ function safe(s) {
   try { return JSON.parse(s); } catch { return null; }
 }
 
-module.exports = { summary, learningGain, lessonBreakdown, learners, publicStats, nudgeStatus };
+// The inclusive start date for a report range, or null for all-time. `week` is
+// the last 7 days (today + 6 back), `month` the last 30. Computed in UTC to
+// match the stored timestamps.
+function sinceFor(range, today) {
+  if (!range || range === 'all') return null;
+  if (range === 'today') return today;
+  const d = new Date(today + 'T00:00:00Z');
+  if (range === 'week') d.setUTCDate(d.getUTCDate() - 6);
+  else if (range === 'month') d.setUTCDate(d.getUTCDate() - 29);
+  else return null;
+  return d.toISOString().slice(0, 10);
+}
+
+// The YYYY-MM-DD day of a timestamp — handles SQLite's 'YYYY-MM-DD HH:MM:SS'
+// strings and Postgres's Date objects alike.
+function dayOf(ts) {
+  if (ts == null) return null;
+  if (ts instanceof Date) return ts.toISOString().slice(0, 10);
+  const m = /\d{4}-\d{2}-\d{2}/.exec(String(ts));
+  return m ? m[0] : null;
+}
+
+module.exports = { summary, learningGain, lessonBreakdown, learners, publicStats, nudgeStatus, sinceFor, dayOf };
